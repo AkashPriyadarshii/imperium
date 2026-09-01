@@ -88,7 +88,7 @@ class _StatsScreenState extends State<StatsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: StreamBuilder<List<Entry>>(
           stream: widget.db.watchAllEntries(),
@@ -160,7 +160,7 @@ class _StatsScreenState extends State<StatsScreen> {
                     const SizedBox(height: 8),
                     DropdownButtonFormField<String>(
                       initialValue: _trendCat,
-                      dropdownColor: AppColors.surface,
+                      dropdownColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                       style: t.textTheme.bodyMedium,
                       decoration: const InputDecoration(
                         isDense: true,
@@ -177,8 +177,8 @@ class _StatsScreenState extends State<StatsScreen> {
                     const SizedBox(height: 8),
                     FilledButton.tonalIcon(
                       style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.brass,
-                        foregroundColor: AppColors.bg,
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        foregroundColor: Theme.of(context).colorScheme.onPrimary,
                       ),
                       onPressed: _runTrend,
                       icon: const Icon(Icons.trending_up, size: 18),
@@ -194,7 +194,7 @@ class _StatsScreenState extends State<StatsScreen> {
                     const SizedBox(height: 8),
                     DropdownButtonFormField<String>(
                       initialValue: _catA,
-                      dropdownColor: AppColors.surface,
+                      dropdownColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                       style: t.textTheme.bodyMedium,
                       decoration: const InputDecoration(
                         isDense: true,
@@ -208,7 +208,7 @@ class _StatsScreenState extends State<StatsScreen> {
                     ),
                     DropdownButtonFormField<String>(
                       initialValue: _catB,
-                      dropdownColor: AppColors.surface,
+                      dropdownColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                       style: t.textTheme.bodyMedium,
                       decoration: const InputDecoration(
                         isDense: true,
@@ -225,8 +225,8 @@ class _StatsScreenState extends State<StatsScreen> {
                       width: double.infinity,
                       child: FilledButton(
                         style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.brass,
-                          foregroundColor: AppColors.bg,
+                          backgroundColor: Theme.of(context).colorScheme.primary,
+                          foregroundColor: Theme.of(context).colorScheme.onPrimary,
                         ),
                         onPressed: _probing ? null : _runProbe,
                         child: Text(_probing ? 'Probing…' : 'Run probe'),

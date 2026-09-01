@@ -17,14 +17,14 @@ class BatchScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: AppColors.bg,
-        title: const Text(
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        title: Text(
           'BATCH ENTRY',
           style: TextStyle(
             fontFamily: AppType.monument,
             fontSize: 20,
             letterSpacing: 2.4,
-            color: AppColors.ivory,
+            color: Theme.of(context).colorScheme.onSurface,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -76,7 +76,7 @@ class _BatchBodyState extends State<_BatchBody> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Imported ${valid.length} rows. All data stays on device.'),
-        backgroundColor: AppColors.surfaceRaised,
+        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
       ),
     );
   }
@@ -92,17 +92,17 @@ class _BatchBodyState extends State<_BatchBody> {
                 controller: _controller,
                 maxLines: 8,
                 minLines: 4,
-                style: const TextStyle(color: AppColors.ivory, fontFamily: AppType.ledger),
-                decoration: const InputDecoration(
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontFamily: AppType.ledger),
+                decoration: InputDecoration(
                   hintText: '{"entries": [{"date":"2026-09-01","category":"gym","value":45,"note":"chest day"}]}',
-                  hintStyle: TextStyle(color: AppColors.muted),
+                  hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                   helperText:
                       'Paste a JSON envelope: an "entries" array with date / category / value / unit / note per row. Category must be one of the known categories.',
                   helperMaxLines: 3,
                   filled: true,
-                  fillColor: AppColors.surface,
+                  fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                   border: OutlineInputBorder(
-                    borderSide: BorderSide(color: AppColors.hairline),
+                    borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
                   ),
                 ),
               ),
@@ -145,10 +145,10 @@ class _BatchBodyState extends State<_BatchBody> {
   List<Widget> _aliasControls() {
     final unknown = _unknownCats;
     if (unknown.isEmpty) {
-      return const [
+      return [
         Padding(
-          padding: EdgeInsets.only(top: 4),
-          child: Text('No unknown categories.', style: TextStyle(color: AppColors.muted, fontSize: 12)),
+          padding: const EdgeInsets.only(top: 4),
+          child: Text('No unknown categories.', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12)),
         ),
       ];
     }
@@ -159,15 +159,15 @@ class _BatchBodyState extends State<_BatchBody> {
           child: Row(
             children: [
               Expanded(
-                child: Text(cat, style: const TextStyle(color: AppColors.ivory, fontFamily: AppType.ledger)),
+                child: Text(cat, style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontFamily: AppType.ledger)),
               ),
               const SizedBox(width: 8),
               DropdownButton<String>(
                 value: _alias[cat] ?? 'keep',
-                dropdownColor: AppColors.surfaceRaised,
-                style: const TextStyle(color: AppColors.ivory, fontFamily: AppType.ledger),
+                dropdownColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontFamily: AppType.ledger),
                 items: [
-                  const DropdownMenuItem(value: 'keep', child: Text('Keep', style: TextStyle(color: AppColors.muted))),
+                  DropdownMenuItem(value: 'keep', child: Text('Keep', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant))),
                   for (final k in kCategories)
                     DropdownMenuItem(value: k, child: Text(k)),
                 ],
@@ -204,8 +204,8 @@ class _BatchBodyState extends State<_BatchBody> {
           margin: const EdgeInsets.only(bottom: 8),
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: AppColors.surface,
-            border: Border.all(color: r.error != null ? const Color(0xFFB3574A) : AppColors.hairline),
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            border: Border.all(color: r.error != null ? const Color(0xFFB3574A) : Theme.of(context).colorScheme.outlineVariant),
             borderRadius: BorderRadius.circular(6),
           ),
           child: Column(
@@ -213,13 +213,13 @@ class _BatchBodyState extends State<_BatchBody> {
             children: [
               Text(
                 _rowTitle(r),
-                style: const TextStyle(color: AppColors.ivory, fontFamily: AppType.ledger, fontSize: 14, fontWeight: FontWeight.w700),
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontFamily: AppType.ledger, fontSize: 14, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 2),
               Text(
                 r.error ?? '${_fmtDate(r.date)}  ·  ${r.note.isEmpty ? 'no note' : r.note}',
                 style: TextStyle(
-                  color: r.error != null ? const Color(0xFFB3574A) : AppColors.muted,
+                  color: r.error != null ? const Color(0xFFB3574A) : Theme.of(context).colorScheme.onSurfaceVariant,
                   fontSize: 12,
                   fontFamily: AppType.ledger,
                 ),
@@ -251,9 +251,9 @@ class _BatchBodyState extends State<_BatchBody> {
                       _preview = kBatchPromptTemplate.replaceAll('{PASTE_ACTIVITY}', t.activityPrompt);
                     }),
                     style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: AppColors.hairline),
+                      side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
                     ),
-                    child: Text(t.name, style: const TextStyle(color: AppColors.ivory, fontFamily: AppType.ledger)),
+                    child: Text(t.name, style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontFamily: AppType.ledger)),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -262,9 +262,9 @@ class _BatchBodyState extends State<_BatchBody> {
                     final prompt = kBatchPromptTemplate.replaceAll('{PASTE_ACTIVITY}', t.activityPrompt);
                     Clipboard.setData(ClipboardData(text: prompt));
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Prompt copied. Paste it into your AI to get the envelope.'),
-                        backgroundColor: AppColors.surfaceRaised,
+                      SnackBar(
+                        content: const Text('Prompt copied. Paste it into your AI to get the envelope.'),
+                        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                       ),
                     );
                   },
@@ -277,13 +277,13 @@ class _BatchBodyState extends State<_BatchBody> {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: AppColors.surface,
-              border: Border.all(color: AppColors.hairline),
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
               borderRadius: BorderRadius.circular(6),
             ),
             child: Text(
               _preview!,
-              style: const TextStyle(color: AppColors.muted, fontFamily: AppType.ledger, fontSize: 12),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontFamily: AppType.ledger, fontSize: 12),
             ),
           ),
       ];
@@ -292,7 +292,7 @@ class _BatchBodyState extends State<_BatchBody> {
   Widget _section(String title, List<Widget> Function() body) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(color: AppColors.muted, fontSize: 10.5, letterSpacing: 1.6, fontWeight: FontWeight.w600)),
+          Text(title, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 10.5, letterSpacing: 1.6, fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
           ...body(),
         ],

@@ -1,5 +1,5 @@
 name: imperium
-description: "A new Flutter project."
+description: "Imperium — an offline-first, on-device life ledger. No account, no cloud, no telemetry."
 publish_to: 'none'
 version: 0.1.0+1
 
@@ -9,6 +9,7 @@ environment:
 dependencies:
   drift: ^2.34.3
   drift_flutter: ^0.3.1
+  file_picker: 12.1.2
   flutter:
     sdk: flutter
   flutter_local_notifications: ^22.3.0
@@ -27,6 +28,7 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   drift_dev: ^2.34.5
   build_runner: ^2.15.1
+  path_provider_platform_interface: ^2.1.2
 
 flutter:
   uses-material-design: true

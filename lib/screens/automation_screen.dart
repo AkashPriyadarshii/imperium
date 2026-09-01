@@ -105,20 +105,21 @@ class _AutomationScreenState extends State<AutomationScreen>
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: cs.surface,
       appBar: AppBar(
-        backgroundColor: AppColors.bg,
-        foregroundColor: AppColors.ivory,
+        backgroundColor: cs.surface,
+        foregroundColor: cs.onSurface,
         title: const Text('Automation', style: TextStyle(fontFamily: AppType.monument)),
       ),
       body: Column(
         children: [
           TabBar(
             controller: _tab,
-            indicatorColor: AppColors.brass,
-            labelColor: AppColors.brass,
-            unselectedLabelColor: AppColors.muted,
+            indicatorColor: cs.primary,
+            labelColor: cs.primary,
+            unselectedLabelColor: cs.onSurfaceVariant,
             tabs: const [
               Tab(text: 'Reminders'),
               Tab(text: 'Habits'),
@@ -147,13 +148,13 @@ class _AutomationScreenState extends State<AutomationScreen>
             onTap: () => _pickTime(false), time: _night),
         const SizedBox(height: 24),
         FilledButton(
-          style: FilledButton.styleFrom(backgroundColor: AppColors.brass, foregroundColor: AppColors.bg),
+          style: FilledButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.primary, foregroundColor: Theme.of(context).colorScheme.onPrimary),
           onPressed: _saveReminders,
           child: const Text('Save reminders'),
         ),
         const SizedBox(height: 12),
         OutlinedButton(
-          style: OutlinedButton.styleFrom(foregroundColor: AppColors.muted),
+          style: OutlinedButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant),
           onPressed: () async {
             final granted = await widget.notif.requestPermission();
             if (mounted) setState(() => _permMsg = granted == true ? 'Permission granted.' : 'Permission not granted.');
@@ -162,23 +163,24 @@ class _AutomationScreenState extends State<AutomationScreen>
         ),
         if (_permMsg != null) ...[
           const SizedBox(height: 8),
-          Text(_permMsg!, style: const TextStyle(color: AppColors.muted)),
+          Text(_permMsg!, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
         ],
         const SizedBox(height: 16),
-        const Text('Reminders nudge you to log the day. Current times restore on launch.',
-            style: TextStyle(color: AppColors.muted)),
+        Text('Reminders nudge you to log the day. Current times restore on launch.',
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
       ],
     );
   }
 
   Widget _rowToggle(String label, bool value, ValueChanged<bool> onChanged,
       {required VoidCallback onTap, required TimeOfDay time}) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: cs.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.hairline),
+        border: Border.all(color: cs.outlineVariant),
       ),
       child: Row(
         children: [
@@ -186,7 +188,7 @@ class _AutomationScreenState extends State<AutomationScreen>
             child: InkWell(
               onTap: onTap,
               child: Text('$label  ${time.format(context)}',
-                  style: const TextStyle(color: AppColors.ivory)),
+                  style: TextStyle(color: cs.onSurface)),
             ),
           ),
           Switch(
@@ -203,28 +205,28 @@ class _AutomationScreenState extends State<AutomationScreen>
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        const Text('WEEKLY TARGET', style: TextStyle(color: AppColors.muted, fontSize: 11, letterSpacing: 1.6)),
+        Text('WEEKLY TARGET', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 11, letterSpacing: 1.6)),
         const SizedBox(height: 8),
         _weeklyTarget(),
         const SizedBox(height: 24),
-        const Text('HABITS', style: TextStyle(color: AppColors.muted, fontSize: 11, letterSpacing: 1.6)),
+        Text('HABITS', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 11, letterSpacing: 1.6)),
         const SizedBox(height: 8),
         Row(
           children: [
             Expanded(
               child: TextField(
                 controller: _addCtrl,
-                style: const TextStyle(color: AppColors.ivory),
-                decoration: const InputDecoration(
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                decoration: InputDecoration(
                   hintText: 'New habit',
-                  hintStyle: TextStyle(color: AppColors.muted),
-                  enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: AppColors.hairline)),
+                  hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant)),
                 ),
               ),
             ),
             const SizedBox(width: 8),
             FilledButton(
-              style: FilledButton.styleFrom(backgroundColor: AppColors.brass, foregroundColor: AppColors.bg),
+              style: FilledButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.primary, foregroundColor: Theme.of(context).colorScheme.onPrimary),
               onPressed: _addHabit,
               child: const Text('Add'),
             ),
@@ -245,19 +247,20 @@ class _AutomationScreenState extends State<AutomationScreen>
   }
 
   Widget _habitRow(Habit h) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: cs.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.hairline),
+        border: Border.all(color: cs.outlineVariant),
       ),
       child: Row(
         children: [
-          Expanded(child: Text(h.name, style: const TextStyle(color: AppColors.ivory))),
+          Expanded(child: Text(h.name, style: TextStyle(color: cs.onSurface))),
           IconButton(
-            icon: const Icon(Icons.delete_outline, color: AppColors.muted),
+            icon: Icon(Icons.delete_outline, color: cs.onSurfaceVariant),
             onPressed: () async {
               await widget.db.removeHabit(h.id);
               _reloadHabits();
@@ -278,9 +281,9 @@ class _AutomationScreenState extends State<AutomationScreen>
           children: [
             DropdownButton<int>(
               value: sel == null ? null : _targetHabitId,
-              hint: const Text('Target habit', style: TextStyle(color: AppColors.muted)),
-              dropdownColor: AppColors.surface,
-              style: const TextStyle(color: AppColors.ivory),
+              hint: Text('Target habit', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+              dropdownColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
               items: _habs.map((h) => DropdownMenuItem(value: h.id, child: Text(h.name))).toList(),
               onChanged: (v) async {
                 setState(() => _targetHabitId = v ?? -1);
@@ -291,8 +294,8 @@ class _AutomationScreenState extends State<AutomationScreen>
             const SizedBox(width: 12),
             DropdownButton<int>(
               value: _targetCount,
-              dropdownColor: AppColors.surface,
-              style: const TextStyle(color: AppColors.ivory),
+              dropdownColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
               items: List.generate(7, (i) => DropdownMenuItem(value: i + 1, child: Text('${i + 1}/week'))),
               onChanged: (v) async {
                 setState(() => _targetCount = v ?? 7);
@@ -330,8 +333,8 @@ class _TargetStatus extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (habitId <= 0) {
-      return const Text('Pick a habit to track pace.',
-          style: TextStyle(color: AppColors.muted));
+      return Text('Pick a habit to track pace.',
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant));
     }
     return FutureBuilder<int>(
       future: _daysLogged(),
@@ -343,7 +346,7 @@ class _TargetStatus extends StatelessWidget {
             : 'Short of target: $days / $target days logged this week.';
         return Text(txt,
             style: TextStyle(
-                color: onPace ? AppColors.brass : AppColors.muted, fontSize: 13));
+                color: onPace ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13));
       },
     );
   }

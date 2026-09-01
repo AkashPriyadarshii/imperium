@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'db/database.dart';
@@ -13,6 +14,22 @@ import 'theme/theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Edge-to-edge (Android 15/16): keep the status bar away from app content.
+  // `ponytail:` ceiling — no per-screen inset wiring; AnnotatedRegion alone
+  // forces our control, and mobile (not persistent) mode keeps the nav tray
+  // from overlaying the ledger.*/
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.light,
+      statusBarBrightness: Brightness.dark, // iOS only
+      systemNavigationBarColor: Colors.transparent,
+      systemNavigationBarContrastEnforced: false,
+    ),
+  );
+
   final db = AppDb();
   final notif = NotificationService();
   try {
@@ -20,21 +37,39 @@ Future<void> main() async {
   } catch (_) {
     // Best-effort: a failed notification init must not block the app.
   }
-  runApp(ImperiumApp(db: db, notif: notif));
+
+  // Ask for notification permission + remember the theme choice up front.
+  final prefs = await SharedPreferences.getInstance();
+  final theme = prefs.getString('theme') ?? 'dark';
+  try {
+    await notif.requestPermission();
+  } catch (_) {
+    // Best-effort.
+  }
+
+  runApp(ImperiumApp(db: db, notif: notif, theme: theme));
 }
 
 class ImperiumApp extends StatelessWidget {
-  const ImperiumApp({super.key, required this.db, required this.notif});
+  const ImperiumApp({super.key, required this.db, required this.notif, required this.theme});
 
   final AppDb db;
   final NotificationService notif;
+  final String theme;
 
   @override
   Widget build(BuildContext context) {
+    final dark = switch (theme) {
+      'light' => false,
+      'system' => MediaQuery.platformBrightnessOf(context) == Brightness.dark,
+      _ => true,
+    };
     return MaterialApp(
       title: 'imperium',
       debugShowCheckedModeBanner: false,
-      theme: buildAppTheme(brightness: Brightness.dark),
+      theme: buildAppTheme(brightness: Brightness.light),
+      darkTheme: buildAppTheme(brightness: Brightness.dark),
+      themeMode: dark ? ThemeMode.dark : ThemeMode.light,
       home: Gate(db: db, notif: notif),
     );
   }
@@ -64,11 +99,13 @@ class _GateState extends State<Gate> {
   Future<void> _bootstrap() async {
     final p = await SharedPreferences.getInstance();
     final hasName = (p.getString('name') ?? '').trim().isNotEmpty;
+    final bioPref = p.getBool('biometric') ?? false;
+    final bioAvailable = bioPref ? await BiometricGate().isAvailable() : false;
     if (!mounted) return;
     setState(() {
       _prefs = p;
       _nameSet = hasName;
-      _locked = hasName && (p.getBool('biometric') ?? false);
+      _locked = hasName && bioPref && bioAvailable;
     });
   }
 
@@ -202,14 +239,18 @@ class _ShellState extends State<Shell> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.bg,
-      body: IndexedStack(
-        index: _tab,
-        children: [
-          DashboardScreen(db: widget.db),
-          StatsScreen(db: widget.db),
-          AutomationScreen(db: widget.db, notif: widget.notif),
-          SettingsScreen(db: widget.db, notif: widget.notif),
-        ],
+      body: SafeArea(
+        top: true,
+        bottom: false,
+        child: IndexedStack(
+          index: _tab,
+          children: [
+            DashboardScreen(db: widget.db),
+            StatsScreen(db: widget.db),
+            AutomationScreen(db: widget.db, notif: widget.notif),
+            SettingsScreen(db: widget.db, notif: widget.notif),
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: AppColors.goldDeep,

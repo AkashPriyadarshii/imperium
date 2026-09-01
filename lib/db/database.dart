@@ -63,7 +63,8 @@ class DailyNotes extends Table {
 
 @DriftDatabase(tables: [Entries, Habits, HabitChecks, DailyNotes])
 class AppDb extends _$AppDb {
-  AppDb() : super(driftDatabase(name: 'imperium'));
+  AppDb({QueryExecutor? executor})
+      : super(executor ?? driftDatabase(name: 'imperium'));
 
   @override
   int get schemaVersion => 1;

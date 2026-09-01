@@ -22,10 +22,10 @@ class LogScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppColors.bg,
-        foregroundColor: AppColors.ivory,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
         elevation: 0,
         title: Text(
           'MARK IT',
@@ -351,7 +351,7 @@ class _RecentRow extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 6),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -360,27 +360,27 @@ class _RecentRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(entry.note, maxLines: 1, overflow: TextOverflow.ellipsis, style: style.bodyMedium?.copyWith(color: AppColors.ivory)),
+                Text(entry.note, maxLines: 1, overflow: TextOverflow.ellipsis, style: style.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurface)),
                 Text(
                   '${entry.category.replaceAll('-', ' ').toUpperCase()}'
                   '${entry.amount != null ? '  ·  ${entry.amount}' : ''}',
-                  style: style.labelSmall?.copyWith(color: AppColors.muted, fontSize: 9),
+                  style: style.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 9),
                 ),
               ],
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.replay, size: 18, color: AppColors.brass),
+            icon: Icon(Icons.replay, size: 18, color: Theme.of(context).colorScheme.primary),
             tooltip: 'Repeat',
             onPressed: () => onRepeat(entry),
           ),
           IconButton(
-            icon: const Icon(Icons.edit, size: 18, color: AppColors.muted),
+            icon: Icon(Icons.edit, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
             tooltip: 'Edit',
             onPressed: () => _edit(context),
           ),
           IconButton(
-            icon: const Icon(Icons.delete_outline, size: 18, color: AppColors.muted),
+            icon: Icon(Icons.delete_outline, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
             tooltip: 'Delete',
             onPressed: () => _confirmDelete(context),
           ),
@@ -394,12 +394,12 @@ class _RecentRow extends StatelessWidget {
     final saved = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surface,
+        backgroundColor: Theme.of(ctx).colorScheme.surfaceContainerHighest,
         title: Text('EDIT', style: Theme.of(ctx).textTheme.titleSmall?.copyWith(color: AppColors.brass)),
         content: TextField(
           controller: text,
           autofocus: true,
-          style: const TextStyle(color: AppColors.ivory),
+          style: TextStyle(color: Theme.of(ctx).colorScheme.onSurface),
           decoration: const InputDecoration(hintText: 'Mark it done…'),
         ),
         actions: [
@@ -425,7 +425,7 @@ class _RecentRow extends StatelessWidget {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surface,
+        backgroundColor: Theme.of(ctx).colorScheme.surfaceContainerHighest,
         title: const Text('Delete this entry?'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),

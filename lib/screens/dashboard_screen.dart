@@ -4,6 +4,7 @@ import '../db/database.dart';
 import '../services/quotes.dart';
 import '../services/stats_engine.dart';
 import '../theme/theme.dart';
+import 'history_screen.dart';
 import 'log_screen.dart';
 
 const List<String> _months = [
@@ -35,7 +36,7 @@ class DashboardScreen extends StatelessWidget {
     final style = Theme.of(context).textTheme;
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: StreamBuilder<List<Entry>>(
         stream: db.watchAllEntries(),
         builder: (context, snap) {
@@ -45,14 +46,15 @@ class DashboardScreen extends StatelessWidget {
 
           final doneCount = kCategories.where(todayCats.contains).length;
 
-          return CustomScrollView(
-            slivers: [
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(20, 28, 20, 0),
-                sliver: SliverToBoxAdapter(
-                  child: _header(context, now),
+          return SafeArea(
+            child: CustomScrollView(
+              slivers: [
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                  sliver: SliverToBoxAdapter(
+                    child: _header(context, now),
+                  ),
                 ),
-              ),
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
                 sliver: SliverToBoxAdapter(
@@ -66,7 +68,7 @@ class DashboardScreen extends StatelessWidget {
                     children: [
                       Text('TODAY\'S DISCIPLINE', style: style.labelSmall?.copyWith(color: AppColors.brass)),
                       const Spacer(),
-                      Text('$doneCount / ${kCategories.length}', style: style.labelSmall?.copyWith(color: AppColors.muted)),
+                      Text('$doneCount / ${kCategories.length}', style: style.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
                     ],
                   ),
                 ),
@@ -96,7 +98,8 @@ class DashboardScreen extends StatelessWidget {
                 ),
               ),
             ],
-          );
+          ),
+        );
         },
       ),
       floatingActionButton: _AddFab(db: db),
@@ -115,9 +118,9 @@ class DashboardScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('${_months[now.month - 1].toUpperCase()} ${now.day}', style: style.headlineSmall?.copyWith(color: AppColors.ivory)),
+                  Text('${_months[now.month - 1].toUpperCase()} ${now.day}', style: style.headlineSmall?.copyWith(color: Theme.of(context).colorScheme.onSurface)),
                   const SizedBox(height: 4),
-                  Text(_weekdays[now.weekday - 1].toUpperCase(), style: style.labelSmall?.copyWith(color: AppColors.muted)),
+                  Text(_weekdays[now.weekday - 1].toUpperCase(), style: style.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
                 ],
               ),
             ),
@@ -125,7 +128,20 @@ class DashboardScreen extends StatelessWidget {
               future: StatsEngine(db).overallStreak(now),
               builder: (context, snap) {
                 final streak = snap.data?.current ?? 0;
-                return Text('DAY ${streak + 1}', style: style.displaySmall?.copyWith(fontSize: 24, color: AppColors.brass));
+                return Row(
+                  children: [
+                    IconButton(
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => HistoryScreen(db: db)),
+                      ),
+                      icon: Icon(Icons.history,
+                          size: 20, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                      splashRadius: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text('DAY ${streak + 1}', style: style.displaySmall?.copyWith(fontSize: 24, color: AppColors.brass)),
+                  ],
+                );
               },
             ),
           ],
@@ -143,10 +159,10 @@ class DashboardScreen extends StatelessWidget {
         Container(height: 1, color: AppColors.brass, margin: const EdgeInsets.only(bottom: 16)),
         Text(
           quote.text,
-          style: style.headlineMedium?.copyWith(fontSize: 24, color: AppColors.ivory, height: 1.4),
+          style: style.headlineMedium?.copyWith(fontSize: 24, color: Theme.of(context).colorScheme.onSurface, height: 1.4),
         ),
         const SizedBox(height: 12),
-        Text(quote.author.toUpperCase(), style: style.labelSmall?.copyWith(color: AppColors.muted)),
+        Text(quote.author.toUpperCase(), style: style.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
       ],
     );
   }
@@ -195,9 +211,9 @@ class DashboardScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(value, style: style.displaySmall?.copyWith(fontSize: 20, color: AppColors.brass)),
+          Text(value, style: style.displaySmall?.copyWith(fontSize: 20, color: Theme.of(context).colorScheme.primary)),
           const SizedBox(height: 2),
-          Text(label, style: style.labelSmall?.copyWith(color: AppColors.muted, fontSize: 9)),
+          Text(label, style: style.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 9)),
         ],
       ),
     );
@@ -228,8 +244,8 @@ class _AddFab extends StatelessWidget {
     return FloatingActionButton(
       onPressed: () =>
           Navigator.of(context).push(MaterialPageRoute(builder: (_) => LogScreen(db: db))),
-      backgroundColor: AppColors.brass,
-      foregroundColor: AppColors.bg,
+      backgroundColor: Theme.of(context).colorScheme.primary,
+      foregroundColor: Theme.of(context).colorScheme.onPrimary,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       child: const Icon(Icons.add),
     );
@@ -254,7 +270,7 @@ class _LedgerRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
-          Text(label.toUpperCase().replaceAll('-', ' '), style: style.labelSmall?.copyWith(color: AppColors.muted)),
+          Text(label.toUpperCase().replaceAll('-', ' '), style: style.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
           const SizedBox(width: 10),
           _StatusDot(has: has),
           const Spacer(),
@@ -319,14 +335,14 @@ class _HabitChipState extends State<_HabitChip> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: checked ? AppColors.doneSurface : AppColors.surface,
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: checked ? AppColors.brass : AppColors.hairline),
+              border: Border.all(color: checked ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.outlineVariant),
             ),
             child: Text(
               widget.habit.name.toUpperCase(),
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: checked ? AppColors.brass : AppColors.muted,
+                    color: checked ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
             ),
           ),

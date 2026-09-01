@@ -54,7 +54,7 @@ List<BatchRow> parseEnvelope(String raw, {Map<String, String>? alias}) {
     final dateStr = e['date'] as String?;
     DateTime? date;
     if (dateStr != null) {
-      date = DateTime.tryParse(dateStr);
+      date = _parseDate(dateStr);
     }
     final value = e['value'] is num ? (e['value'] as num).toDouble() : null;
 
@@ -69,6 +69,20 @@ List<BatchRow> parseEnvelope(String raw, {Map<String, String>? alias}) {
     ));
   }
   return result;
+}
+
+/// Strict date parse: Dart's `DateTime.tryParse` silently rolls out-of-range
+/// fields over (2026-02-30 → 2026-03-02). Reject any value that doesn't
+/// round-trip to the same YYYY-MM-DD. `ponytail:` full ISO/datetime normalization
+/// is v0.2; the envelope is specified as YYYY-MM-DD.
+DateTime? _parseDate(String s) {
+  final d = DateTime.tryParse(s);
+  if (d == null) return null;
+  final short = s.length >= 10 ? s.substring(0, 10) : s;
+  final norm = '${d.year.toString().padLeft(4, '0')}'
+      '-${d.month.toString().padLeft(2, '0')}'
+      '-${d.day.toString().padLeft(2, '0')}';
+  return short == norm ? d : null;
 }
 
 /// Fill-in-blank prompt a user can paste into an LLM so it emits the envelope.

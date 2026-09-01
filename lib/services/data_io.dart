@@ -17,17 +17,25 @@ class DataIO {
   final AppDb db;
   DataIO(this.db);
 
-  Future<String> exportJson() async {
+  /// Serialize the whole dataset to a JSON string (off-device backup payload).
+  Future<String> buildJson() async {
     final entries = await db.watchAllEntries().first;
     final habits = await db.allHabits();
     final notes = await (db.select(db.dailyNotes)).get();
-    final json = jsonEncode({
+    return jsonEncode({
       'version': 1,
       'exportedAt': DateTime.now().toIso8601String(),
       'entries': entries.map(_entryToJson).toList(),
       'habits': habits.map((h) => {'id': h.id, 'name': h.name}).toList(),
       'notes': notes.map((n) => {'date': n.date, 'note': n.note}).toList(),
     });
+  }
+
+  /// Write a backup into the app documents dir. Used by armored reset.
+  /// `ponytail:` ceiling — not user-navigable on Android 13+; the UI surface
+  /// uses the SAF picker (buildJson + saveFile) instead. Kept for reset + tests.
+  Future<String> exportJson() async {
+    final json = await buildJson();
     final dir = await getApplicationDocumentsDirectory();
     final file = File('${dir.path}/imperium-backup-${DateTime.now().millisecondsSinceEpoch}.json');
     await file.writeAsString(json);
@@ -45,10 +53,8 @@ class DataIO {
         'loggedAt': e.loggedAt,
       };
 
-  /// Merge-by-id: rows with a matching id update in place; new rows insert.
-  /// Returns (imported, skipped) counts.
-  Future<({int inserted, int skipped})> importJson(String path) async {
-    final raw = await File(path).readAsString();
+  /// Merge-by-id from raw JSON text (picker bytes or a file). Returns counts.
+  Future<({int inserted, int skipped})> importJsonString(String raw) async {
     final data = jsonDecode(raw) as Map<String, dynamic>;
     final entries = (data['entries'] as List? ?? []).cast<Map<String, dynamic>>();
 
@@ -73,5 +79,11 @@ class DataIO {
     });
     skipped += entries.length - inserted;
     return (inserted: inserted, skipped: skipped);
+  }
+
+  /// Merge-by-id from a file path. Thin wrapper over [importJsonString].
+  Future<({int inserted, int skipped})> importJson(String path) async {
+    final raw = await File(path).readAsString();
+    return importJsonString(raw);
   }
 }

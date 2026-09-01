@@ -1,3 +1,7 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -6,6 +10,7 @@ import '../services/data_io.dart';
 import '../services/notifications.dart';
 import '../theme/theme.dart';
 import 'batch_screen.dart';
+import 'prompt_screen.dart';
 
 /// Settings: data, armored reset, name, biometric, theme, about.
 class SettingsScreen extends StatefulWidget {
@@ -19,7 +24,6 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   final _nameCtrl = TextEditingController();
-  final _importCtrl = TextEditingController();
 
   // Armored reset staging
   bool _resetWarnAccepted = false;
@@ -54,18 +58,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _export() async {
     try {
-      final path = await DataIO(widget.db).exportJson();
-      if (mounted) setState(() => _exportMsg = 'Exported to:\n$path');
+      final json = await DataIO(widget.db).buildJson();
+      final bytes = Uint8List.fromList(utf8.encode(json));
+      final uri = await FilePicker.saveFile(
+        dialogTitle: 'Save imperium backup',
+        fileName: 'imperium-backup.json',
+        bytes: bytes,
+      );
+      if (uri == null) return; // user cancelled
+      if (mounted) setState(() => _exportMsg = 'Backup saved to:\n${uri.path}');
     } catch (e) {
       if (mounted) setState(() => _exportMsg = 'Export failed: $e');
     }
   }
 
   Future<void> _import() async {
-    final path = _importCtrl.text.trim();
-    if (path.isEmpty) return;
     try {
-      final r = await DataIO(widget.db).importJson(path);
+      final file = await FilePicker.pickFile(type: FileType.any);
+      if (file == null) return; // user cancelled
+      final bytes = await file.readAsBytes();
+      final raw = utf8.decode(bytes);
+      final r = await DataIO(widget.db).importJsonString(raw);
       if (mounted) setState(() => _importMsg = 'Inserted ${r.inserted}, skipped ${r.skipped}.');
     } catch (e) {
       if (mounted) setState(() => _importMsg = 'Import failed: $e');
@@ -111,10 +124,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
-        backgroundColor: AppColors.bg,
-        foregroundColor: AppColors.ivory,
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
         title: const Text('Settings', style: TextStyle(fontFamily: AppType.monument)),
       ),
       body: ListView(
@@ -123,51 +136,51 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _section('DATA'),
           _card([
             FilledButton.icon(
-              style: FilledButton.styleFrom(backgroundColor: AppColors.brass, foregroundColor: AppColors.bg),
+              style: FilledButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.primary, foregroundColor: Theme.of(context).colorScheme.onPrimary),
               onPressed: _export,
               icon: const Icon(Icons.upload_file, size: 18),
               label: const Text('Export JSON'),
             ),
             if (_exportMsg != null) ...[
               const SizedBox(height: 8),
-              Text(_exportMsg!, style: const TextStyle(color: AppColors.muted, fontSize: 12)),
+              Text(_exportMsg!, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12)),
             ],
             const SizedBox(height: 16),
-            TextField(
-              controller: _importCtrl,
-              style: const TextStyle(color: AppColors.ivory),
-              decoration: const InputDecoration(
-                hintText: 'Path to exported .json',
-                hintStyle: TextStyle(color: AppColors.muted),
-                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: AppColors.hairline)),
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.onSurface,
+                side: BorderSide(color: Theme.of(context).colorScheme.outline),
               ),
-            ),
-            const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: OutlinedButton(
-                style: OutlinedButton.styleFrom(foregroundColor: AppColors.muted),
-                onPressed: _import,
-                child: const Text('Import JSON'),
-              ),
+              onPressed: _import,
+              icon: const Icon(Icons.file_open, size: 18),
+              label: const Text('Import JSON'),
             ),
             if (_importMsg != null) ...[
               const SizedBox(height: 8),
-              Text(_importMsg!, style: const TextStyle(color: AppColors.muted, fontSize: 12)),
+              Text(_importMsg!, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12)),
             ],
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'Backup reminder: export regularly. Keep the file somewhere safe.',
-              style: TextStyle(color: AppColors.muted, fontSize: 12),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12),
             ),
             const SizedBox(height: 12),
             TextButton.icon(
-              style: TextButton.styleFrom(foregroundColor: AppColors.brass),
+              style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.primary),
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => BatchScreen(db: widget.db)),
               ),
               icon: const Icon(Icons.content_paste, size: 18),
               label: const Text('Batch paste (LLM output)'),
+            ),
+            const SizedBox(height: 8),
+            TextButton.icon(
+              style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.primary),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const PromptScreen()),
+              ),
+              icon: const Icon(Icons.smart_toy, size: 18),
+              label: const Text('LLM prompt (persona + templates)'),
             ),
           ]),
           const SizedBox(height: 24),
@@ -182,19 +195,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
             CheckboxListTile(
               value: _resetWarnAccepted,
               onChanged: (v) => setState(() => _resetWarnAccepted = v ?? false),
-              title: const Text('I understand everything will be deleted forever.',
-                  style: TextStyle(color: AppColors.ivory)),
-              activeColor: AppColors.brass,
+              title: Text('I understand everything will be deleted forever.',
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
+              activeColor: Theme.of(context).colorScheme.primary,
               contentPadding: EdgeInsets.zero,
             ),
             const SizedBox(height: 8),
             TextField(
-              style: const TextStyle(color: AppColors.ivory),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
               onChanged: (v) => setState(() => _resetTyped = v),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Type RESET to confirm',
-                labelStyle: TextStyle(color: AppColors.muted),
-                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: AppColors.hairline)),
+                labelStyle: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant)),
               ),
             ),
             const SizedBox(height: 12),
@@ -214,16 +227,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _card([
             TextField(
               controller: _nameCtrl,
-              style: const TextStyle(color: AppColors.ivory),
-              decoration: const InputDecoration(
-                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: AppColors.hairline)),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+              decoration: InputDecoration(
+                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant)),
               ),
             ),
             const SizedBox(height: 8),
             Align(
               alignment: Alignment.centerLeft,
               child: FilledButton(
-                style: FilledButton.styleFrom(backgroundColor: AppColors.brass, foregroundColor: AppColors.bg),
+                style: FilledButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.primary, foregroundColor: Theme.of(context).colorScheme.onPrimary),
                 onPressed: () => _setPref('name', _nameCtrl.text.trim()),
                 child: const Text('Save'),
               ),
@@ -239,13 +252,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 setState(() => _biometric = v);
                 _setPref('biometric', v);
               },
-              title: const Text('Gate with biometrics', style: TextStyle(color: AppColors.ivory)),
-              activeTrackColor: AppColors.brass,
+              title: Text('Gate with biometrics', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
+              activeTrackColor: Theme.of(context).colorScheme.primary,
               contentPadding: EdgeInsets.zero,
             ),
-            const Text(
+            Text(
               'When enabled, the next launch is gated behind biometrics. Best-effort: no effect on devices without a sensor.',
-              style: TextStyle(color: AppColors.muted, fontSize: 12),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12),
             ),
           ]),
           const SizedBox(height: 24),
@@ -265,9 +278,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               },
               style: ButtonStyle(
                 foregroundColor: WidgetStateProperty.resolveWith(
-                  (states) => states.contains(WidgetState.selected) ? AppColors.bg : AppColors.muted),
+                  (states) => states.contains(WidgetState.selected) ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurfaceVariant),
                 backgroundColor: WidgetStateProperty.resolveWith(
-                  (states) => states.contains(WidgetState.selected) ? AppColors.brass : AppColors.surface),
+                  (states) => states.contains(WidgetState.selected) ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.surfaceContainerHighest),
               ),
             ),
           ]),
@@ -277,11 +290,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _card([
             const Text('imperium', style: TextStyle(fontFamily: AppType.monument, fontSize: 20, color: AppColors.brass)),
             const SizedBox(height: 4),
-            const Text('v0.1', style: TextStyle(color: AppColors.muted)),
+            Text('v0.1', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'All data stays on this device. No account, no cloud, no telemetry.',
-              style: TextStyle(color: AppColors.muted),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
           ]),
         ],
@@ -293,16 +306,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surface,
+        backgroundColor: Theme.of(ctx).colorScheme.surfaceContainerHighest,
         title: Text('Final confirmation', style: TextStyle(color: Theme.of(ctx).colorScheme.error)),
-        content: const Text(
+        content: Text(
           'A backup will be written first, then every entry, habit, note and setting is permanently deleted.',
-          style: TextStyle(color: AppColors.ivory),
+          style: TextStyle(color: Theme.of(ctx).colorScheme.onSurface),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel', style: TextStyle(color: AppColors.muted))),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Cancel', style: TextStyle(color: Theme.of(ctx).colorScheme.onSurfaceVariant))),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Theme.of(ctx).colorScheme.error, foregroundColor: AppColors.lightSurface),
+            style: FilledButton.styleFrom(backgroundColor: Theme.of(ctx).colorScheme.error, foregroundColor: Theme.of(ctx).colorScheme.onError),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Yes, delete everything'),
           ),
@@ -315,15 +328,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _section(String title) => Padding(
         padding: const EdgeInsets.only(bottom: 8),
         child: Text(title,
-            style: const TextStyle(color: AppColors.muted, fontSize: 11, letterSpacing: 1.6)),
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 11, letterSpacing: 1.6)),
       );
 
   Widget _card(List<Widget> children) => Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: AppColors.hairline),
+          border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: children),
       );
