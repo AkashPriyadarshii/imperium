@@ -40,37 +40,43 @@ Future<void> main() async {
 
   // Ask for notification permission + remember the theme choice up front.
   final prefs = await SharedPreferences.getInstance();
-  final theme = prefs.getString('theme') ?? 'dark';
+  themeNotifier.value = prefs.getString('theme') ?? 'dark';
   try {
     await notif.requestPermission();
   } catch (_) {
     // Best-effort.
   }
 
-  runApp(ImperiumApp(db: db, notif: notif, theme: theme));
+  runApp(ImperiumApp(db: db, notif: notif));
 }
 
+final ValueNotifier<String> themeNotifier = ValueNotifier<String>('dark');
+
 class ImperiumApp extends StatelessWidget {
-  const ImperiumApp({super.key, required this.db, required this.notif, required this.theme});
+  const ImperiumApp({super.key, required this.db, required this.notif});
 
   final AppDb db;
   final NotificationService notif;
-  final String theme;
 
   @override
   Widget build(BuildContext context) {
-    final dark = switch (theme) {
-      'light' => false,
-      'system' => MediaQuery.platformBrightnessOf(context) == Brightness.dark,
-      _ => true,
-    };
-    return MaterialApp(
-      title: 'imperium',
-      debugShowCheckedModeBanner: false,
-      theme: buildAppTheme(brightness: Brightness.light),
-      darkTheme: buildAppTheme(brightness: Brightness.dark),
-      themeMode: dark ? ThemeMode.dark : ThemeMode.light,
-      home: Gate(db: db, notif: notif),
+    return ValueListenableBuilder<String>(
+      valueListenable: themeNotifier,
+      builder: (context, currentTheme, _) {
+        final mode = switch (currentTheme) {
+          'light' => ThemeMode.light,
+          'system' => ThemeMode.system,
+          _ => ThemeMode.dark,
+        };
+        return MaterialApp(
+          title: 'imperium',
+          debugShowCheckedModeBanner: false,
+          theme: buildAppTheme(brightness: Brightness.light),
+          darkTheme: buildAppTheme(brightness: Brightness.dark),
+          themeMode: mode,
+          home: Gate(db: db, notif: notif),
+        );
+      },
     );
   }
 }
@@ -107,6 +113,9 @@ class _GateState extends State<Gate> {
       _nameSet = hasName;
       _locked = hasName && bioPref && bioAvailable;
     });
+    if (hasName && bioPref && bioAvailable) {
+      _unlock();
+    }
   }
 
   Future<void> _saveName(String name) async {
@@ -144,8 +153,9 @@ class _OnboardingState extends State<_Onboarding> {
   @override
   Widget build(BuildContext context) {
     final style = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Center(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 32),
@@ -157,23 +167,28 @@ class _OnboardingState extends State<_Onboarding> {
                   style: style.displaySmall?.copyWith(color: AppColors.brass, fontFamily: AppType.monument)),
               const SizedBox(height: 8),
               Text('Your ledger. For you alone.', textAlign: TextAlign.center,
-                  style: style.bodyMedium?.copyWith(color: AppColors.muted)),
+                  style: style.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant)),
               const SizedBox(height: 32),
               TextField(
                 controller: _c,
                 autofocus: true,
-                style: const TextStyle(color: AppColors.ivory, fontFamily: AppType.ledger),
+                style: TextStyle(color: colorScheme.onSurface, fontFamily: AppType.ledger),
                 decoration: InputDecoration(
                   labelText: 'What shall we call you?',
-                  labelStyle: const TextStyle(color: AppColors.muted),
-                  enabledBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppColors.hairline)),
+                  labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
+                  enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: colorScheme.outlineVariant)),
                   focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppColors.goldDeep)),
+
+
                   border: InputBorder.none,
                 ),
               ),
               const SizedBox(height: 24),
               FilledButton(
-                style: FilledButton.styleFrom(backgroundColor: AppColors.goldDeep),
+                style: FilledButton.styleFrom(
+                  backgroundColor: colorScheme.primary,
+                  foregroundColor: colorScheme.onPrimary,
+                ),
                 onPressed: () {
                   if (_c.text.trim().isNotEmpty) widget.onDone(_c.text);
                 },
@@ -195,8 +210,9 @@ class _BiometricLock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final style = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Center(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 32),
@@ -207,14 +223,17 @@ class _BiometricLock extends StatelessWidget {
                   style: style.displaySmall?.copyWith(color: AppColors.brass, fontFamily: AppType.monument)),
               const SizedBox(height: 16),
               Text('Verify to continue', textAlign: TextAlign.center,
-                  style: style.bodyMedium?.copyWith(color: AppColors.muted)),
+                  style: style.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant)),
               const SizedBox(height: 24),
               FilledButton(
-                style: FilledButton.styleFrom(backgroundColor: AppColors.goldDeep),
+                style: FilledButton.styleFrom(
+                  backgroundColor: colorScheme.primary,
+                  foregroundColor: colorScheme.onPrimary,
+                ),
                 onPressed: onUnlock,
                 child: const Text('UNLOCK', style: TextStyle(fontFamily: AppType.monument)),
               ),
-              TextButton(onPressed: onSkip, child: const Text('Skip', style: TextStyle(color: AppColors.muted))),
+              TextButton(onPressed: onSkip, child: Text('Skip', style: TextStyle(color: colorScheme.onSurfaceVariant))),
             ],
           ),
         ),
@@ -237,8 +256,9 @@ class _ShellState extends State<Shell> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         top: true,
         bottom: false,
@@ -253,17 +273,18 @@ class _ShellState extends State<Shell> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: AppColors.goldDeep,
-        foregroundColor: AppColors.bg,
+        backgroundColor: colorScheme.primary,
+        foregroundColor: colorScheme.onPrimary,
         onPressed: () => Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => LogScreen(db: widget.db)),
         ),
         child: const Icon(Icons.add),
       ),
       bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: AppColors.surface,
+        backgroundColor: colorScheme.surface,
         selectedItemColor: AppColors.brass,
-        unselectedItemColor: AppColors.muted,
+        unselectedItemColor: colorScheme.onSurfaceVariant,
+        type: BottomNavigationBarType.fixed,
         currentIndex: _tab,
         onTap: (i) => setState(() => _tab = i),
         items: const [

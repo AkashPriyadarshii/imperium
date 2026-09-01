@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../db/database.dart';
+import '../main.dart';
 import '../services/data_io.dart';
 import '../services/notifications.dart';
 import '../theme/theme.dart';
@@ -111,6 +112,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('All data erased. Backup saved to:\n$backup')),
       );
+      themeNotifier.value = 'dark';
       setState(() {
         _resetWarnAccepted = false;
         _resetTyped = '';
@@ -273,8 +275,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
               selected: {_theme},
               onSelectionChanged: (s) {
-                setState(() => _theme = s.first);
-                _setPref('theme', _theme);
+                final next = s.first;
+                setState(() => _theme = next);
+                themeNotifier.value = next;
+                _setPref('theme', next);
               },
               style: ButtonStyle(
                 foregroundColor: WidgetStateProperty.resolveWith(

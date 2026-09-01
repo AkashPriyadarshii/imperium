@@ -21,6 +21,7 @@ class BiometricGate {
     try {
       return await _auth.authenticate(
         localizedReason: 'Unlock your ledger',
+        persistAcrossBackgrounding: true,
         biometricOnly: true,
       );
     } catch (_) {
