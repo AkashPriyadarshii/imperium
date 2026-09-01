@@ -100,11 +100,11 @@ class _HistoryBodyState extends State<_HistoryBody> {
   }
 
   Widget _grouped(List<Entry> entries) {
-    // Group by local day, preserving newest-first order.
+    // Group by logical day (4-hour rollover), preserving newest-first order.
     final groups = <String, List<Entry>>{};
     final order = <String>[];
     for (final e in entries) {
-      final day = DateTime.fromMillisecondsSinceEpoch(e.loggedAt);
+      final day = DateTime.fromMillisecondsSinceEpoch(e.loggedAt).subtract(const Duration(hours: 4));
       final key = '${day.year}-${day.month.toString().padLeft(2, '0')}-${day.day.toString().padLeft(2, '0')}';
       if (!groups.containsKey(key)) {
         groups[key] = [];

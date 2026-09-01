@@ -118,7 +118,9 @@ class StatsEngine {
 
     final atRisk = todayCount == 0 && now.hour >= 20 && streak > 0;
 
-    return (current: streak, best: best, toTie: toTie, atRisk: atRisk);
+    final displayStreak = todayCount == 0 ? streak + 1 : (streak == 0 ? 1 : streak);
+
+    return (current: displayStreak, best: best, toTie: toTie, atRisk: atRisk);
   }
 
   static int _longestRun(Set<int> dayStamps) {

@@ -131,7 +131,7 @@ class DashboardScreen extends StatelessWidget {
             FutureBuilder(
               future: StatsEngine(db).overallStreak(now),
               builder: (context, snap) {
-                final streak = snap.data?.current ?? 0;
+                final streak = snap.data?.current ?? 1;
                 return Row(
                   children: [
                     IconButton(
@@ -143,7 +143,7 @@ class DashboardScreen extends StatelessWidget {
                       splashRadius: 20,
                     ),
                     const SizedBox(width: 8),
-                    Text('DAY ${streak + 1}', style: style.displaySmall?.copyWith(fontSize: 24, color: AppColors.brass)),
+                    Text('DAY $streak', style: style.displaySmall?.copyWith(fontSize: 24, color: (snap.data?.atRisk ?? false) ? Theme.of(context).colorScheme.error : AppColors.brass)),
                   ],
                 );
               },
