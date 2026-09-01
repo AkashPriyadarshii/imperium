@@ -88,7 +88,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   /// Armored reset: backup first, then wipe everything.
   Future<void> _wipeAll() async {
-    final backup = await DataIO(widget.db).exportJson();
+    final jsonStr = await DataIO(widget.db).buildJson();
+    final bytes = Uint8List.fromList(utf8.encode(jsonStr));
+    final uri = await FilePicker.saveFile(
+      dialogTitle: 'Save backup before reset',
+      fileName: 'imperium-backup-pre-wipe.json',
+      bytes: bytes,
+    );
+    if (uri == null) return; // user cancelled, do not wipe
+    final backup = uri.path;
+
     final entries = await widget.db.watchAllEntries().first;
     for (final e in entries) {
       await widget.db.deleteEntry(e.id);

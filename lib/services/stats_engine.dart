@@ -88,7 +88,7 @@ class StatsEngine {
   }
 
   /// Streak math for "any entry that day" across all categories.
-  Future<({int current, int best, int toTie})> overallStreak(DateTime now) async {
+  Future<({int current, int best, int toTie, bool atRisk})> overallStreak(DateTime now) async {
     final day = DateTime(now.year, now.month, now.day);
     var streak = 0;
     var cursor = day;
@@ -100,8 +100,10 @@ class StatsEngine {
       if (i != 0 && n == 0) break;
       cursor = cursor.subtract(const Duration(days: 1));
     }
+
+    final todayCount = await db.countOnDate(day);
     // Guard: if today empty, streak counts consecutive logged days ending yesterday.
-    if (await db.countOnDate(day) == 0) {
+    if (todayCount == 0) {
       streak = 0;
       cursor = day.subtract(const Duration(days: 1));
       while ((await db.countOnDate(cursor)) > 0) {
@@ -113,7 +115,10 @@ class StatsEngine {
     final dates = await db.allLoggedDates();
     final best = _longestRun(dates);
     final toTie = best > streak ? best - streak : 0;
-    return (current: streak, best: best, toTie: toTie);
+
+    final atRisk = todayCount == 0 && now.hour >= 20 && streak > 0;
+
+    return (current: streak, best: best, toTie: toTie, atRisk: atRisk);
   }
 
   static int _longestRun(Set<int> dayStamps) {

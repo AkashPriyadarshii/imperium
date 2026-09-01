@@ -95,7 +95,7 @@ class _StatsScreenState extends State<StatsScreen> {
           builder: (context, snapshot) {
             final entries = snapshot.data ?? const <Entry>[];
             return FutureBuilder<
-                ({int current, int best, int toTie})>(
+                ({int current, int best, int toTie, bool atRisk})>(
               future: _stats.overallStreak(_now!),
               builder: (context, streakSnap) {
                 final streak = streakSnap.data;

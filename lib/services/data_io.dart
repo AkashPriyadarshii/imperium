@@ -65,6 +65,7 @@ class DataIO {
         final existing = id == null ? null : await db.entryById(id);
         if (existing != null) continue; // skip dupes
         await db.addEntry(EntriesCompanion.insert(
+          id: id != null ? Value(id) : const Value.absent(),
           category: m['category'] as String? ?? 'freeform',
           note: m['note'] as String? ?? '',
           emoji: Value(m['emoji'] as String?),

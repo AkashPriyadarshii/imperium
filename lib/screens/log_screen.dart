@@ -279,7 +279,7 @@ class _LogFormState extends State<_LogForm> {
       rating: Value(e.rating),
       amount: Value(e.amount),
       unit: Value(e.unit ?? ''),
-      loggedAt: DateTime.now().millisecondsSinceEpoch,
+      loggedAt: _loggedAt.millisecondsSinceEpoch,
       createdAt: DateTime.now().millisecondsSinceEpoch,
     ));
     if (!mounted) return;

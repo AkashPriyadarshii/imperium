@@ -33,6 +33,7 @@ class DashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
+    final logicalNow = now.subtract(const Duration(hours: 4));
     final style = Theme.of(context).textTheme;
 
     return Scaffold(
@@ -41,7 +42,10 @@ class DashboardScreen extends StatelessWidget {
         stream: db.watchAllEntries(),
         builder: (context, snap) {
           final entries = snap.data ?? const <Entry>[];
-          final today = entries.where((e) => _sameDay(DateTime.fromMillisecondsSinceEpoch(e.loggedAt), now)).toList();
+          final today = entries.where((e) {
+            final logicalEntryDate = DateTime.fromMillisecondsSinceEpoch(e.loggedAt).subtract(const Duration(hours: 4));
+            return _sameDay(logicalEntryDate, logicalNow);
+          }).toList();
           final todayCats = today.map((e) => e.category).toSet();
 
           final doneCount = kCategories.where(todayCats.contains).length;
