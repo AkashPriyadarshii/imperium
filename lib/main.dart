@@ -5,12 +5,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'db/database.dart';
 import 'screens/automation_screen.dart';
 import 'screens/dashboard_screen.dart';
+import 'screens/history_screen.dart';
 import 'screens/log_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/stats_screen.dart';
 import 'services/biometric.dart';
 import 'services/notifications.dart';
 import 'theme/theme.dart';
+
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -266,6 +268,7 @@ class _ShellState extends State<Shell> {
           index: _tab,
           children: [
             DashboardScreen(db: widget.db),
+            HistoryScreen(db: widget.db),
             StatsScreen(db: widget.db),
             AutomationScreen(db: widget.db, notif: widget.notif),
             SettingsScreen(db: widget.db, notif: widget.notif),
@@ -289,6 +292,7 @@ class _ShellState extends State<Shell> {
         onTap: (i) => setState(() => _tab = i),
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.grid_view), label: 'Ledger'),
+          BottomNavigationBarItem(icon: Icon(Icons.history), label: 'History'),
           BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'Stats'),
           BottomNavigationBarItem(icon: Icon(Icons.bolt), label: 'Auto'),
           BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Settings'),
@@ -297,3 +301,4 @@ class _ShellState extends State<Shell> {
     );
   }
 }
+

@@ -156,32 +156,40 @@ class _BatchBodyState extends State<_BatchBody> {
       for (final cat in unknown)
         Padding(
           padding: const EdgeInsets.only(bottom: 12),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(cat, style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontFamily: AppType.ledger)),
-              ),
-              const SizedBox(width: 8),
-              DropdownButton<String>(
-                value: _alias[cat] ?? 'keep',
-                dropdownColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-                style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontFamily: AppType.ledger),
-                items: [
-                  DropdownMenuItem(value: 'keep', child: Text('Keep', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant))),
-                  for (final k in kCategories)
-                    DropdownMenuItem(value: k, child: Text(k)),
-                ],
-                onChanged: (v) => setState(() {
-                  if (v == null) return;
-                  if (v == 'keep') {
-                    _alias.remove(cat);
-                  } else {
-                    _alias[cat] = v;
-                  }
-                  _rows = parseEnvelope(_controller.text, alias: _alias);
-                }),
-              ),
-            ],
+          child: SizedBox(
+            width: double.infinity,
+            child: Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 8,
+              runSpacing: 4,
+              children: [
+                Text(
+                  cat,
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontFamily: AppType.ledger),
+                ),
+                DropdownButton<String>(
+                  value: _alias[cat] ?? 'keep',
+                  isDense: true,
+                  dropdownColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontFamily: AppType.ledger),
+                  items: [
+                    DropdownMenuItem(value: 'keep', child: Text('Keep', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant))),
+                    for (final k in kCategories)
+                      DropdownMenuItem(value: k, child: Text(k)),
+                  ],
+                  onChanged: (v) => setState(() {
+                    if (v == null) return;
+                    if (v == 'keep') {
+                      _alias.remove(cat);
+                    } else {
+                      _alias[cat] = v;
+                    }
+                    _rows = parseEnvelope(_controller.text, alias: _alias);
+                  }),
+                ),
+              ],
+            ),
           ),
         ),
     ];
@@ -213,11 +221,13 @@ class _BatchBodyState extends State<_BatchBody> {
             children: [
               Text(
                 _rowTitle(r),
+                softWrap: true,
                 style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontFamily: AppType.ledger, fontSize: 14, fontWeight: FontWeight.w700),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 4),
               Text(
                 r.error ?? '${_fmtDate(r.date)}  ·  ${r.note.isEmpty ? 'no note' : r.note}',
+                softWrap: true,
                 style: TextStyle(
                   color: r.error != null ? const Color(0xFFB3574A) : Theme.of(context).colorScheme.onSurfaceVariant,
                   fontSize: 12,
@@ -252,8 +262,14 @@ class _BatchBodyState extends State<_BatchBody> {
                     }),
                     style: OutlinedButton.styleFrom(
                       side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     ),
-                    child: Text(t.name, style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontFamily: AppType.ledger)),
+                    child: Text(
+                      t.name,
+                      textAlign: TextAlign.center,
+                      softWrap: true,
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontFamily: AppType.ledger),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -269,6 +285,9 @@ class _BatchBodyState extends State<_BatchBody> {
                     );
                   },
                   icon: const Icon(Icons.copy, size: 18, color: AppColors.brass),
+                  padding: const EdgeInsets.all(8),
+                  constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                  tooltip: 'Copy template prompt',
                 ),
               ],
             ),

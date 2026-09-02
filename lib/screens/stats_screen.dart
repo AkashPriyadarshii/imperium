@@ -136,29 +136,40 @@ class _StatsScreenState extends State<StatsScreen> {
                   padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
                   children: [
                     // Header with Month Selector
-                    Row(
+                    Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 8,
+                      runSpacing: 8,
                       children: [
-                        IconButton(
-                          onPressed: _prevMonth,
-                          icon: const Icon(Icons.chevron_left, size: 22),
-                          color: t.colorScheme.onSurfaceVariant,
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              onPressed: _prevMonth,
+                              icon: const Icon(Icons.chevron_left, size: 22),
+                              color: t.colorScheme.onSurfaceVariant,
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                            ),
+                            Flexible(
+                              child: Text(
+                                '${_months[_currentViewDate.month - 1].toUpperCase()} ${_currentViewDate.year}',
+                                style: t.textTheme.headlineSmall?.copyWith(fontSize: 18),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: !_isCurrentMonth ? _nextMonth : null,
+                              icon: const Icon(Icons.chevron_right, size: 22),
+                              color: !_isCurrentMonth
+                                  ? t.colorScheme.onSurfaceVariant
+                                  : t.colorScheme.outlineVariant.withValues(alpha: 0.3),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                            ),
+                          ],
                         ),
-                        Text(
-                          '${_months[_currentViewDate.month - 1].toUpperCase()} ${_currentViewDate.year}',
-                          style: t.textTheme.headlineSmall?.copyWith(fontSize: 18),
-                        ),
-                        IconButton(
-                          onPressed: !_isCurrentMonth ? _nextMonth : null,
-                          icon: const Icon(Icons.chevron_right, size: 22),
-                          color: !_isCurrentMonth
-                              ? t.colorScheme.onSurfaceVariant
-                              : t.colorScheme.outlineVariant.withValues(alpha: 0.3),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                        ),
-                        const Spacer(),
                         if (!_isCurrentMonth)
                           GestureDetector(
                             onTap: () => setState(() => _currentViewDate = DateTime.now()),
@@ -215,7 +226,10 @@ class _StatsScreenState extends State<StatsScreen> {
                           style: t.textTheme.bodyMedium,
                           items: [
                             for (final c in kCategories)
-                              DropdownMenuItem(value: c, child: Text(_friendly(c).toUpperCase())),
+                              DropdownMenuItem(
+                                value: c,
+                                child: Text(_friendly(c).toUpperCase(), overflow: TextOverflow.ellipsis),
+                              ),
                           ],
                           onChanged: (v) {
                             if (v != null) setState(() => _trendCat = v);
@@ -224,14 +238,20 @@ class _StatsScreenState extends State<StatsScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    FilledButton.tonalIcon(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: t.colorScheme.primary,
-                        foregroundColor: t.colorScheme.onPrimary,
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.tonalIcon(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: t.colorScheme.primary,
+                          foregroundColor: t.colorScheme.onPrimary,
+                        ),
+                        onPressed: _runTrend,
+                        icon: const Icon(Icons.trending_up, size: 18),
+                        label: const FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text('Compute 7d vs 30d Trend'),
+                        ),
                       ),
-                      onPressed: _runTrend,
-                      icon: const Icon(Icons.trending_up, size: 18),
-                      label: const Text('Compute 7d vs 30d Trend'),
                     ),
                     if (_trend != null) ...[
                       const SizedBox(height: 8),
@@ -264,7 +284,10 @@ class _StatsScreenState extends State<StatsScreen> {
                                 style: t.textTheme.bodyMedium,
                                 items: [
                                   for (final c in kCategories)
-                                    DropdownMenuItem(value: c, child: Text(_friendly(c).toUpperCase())),
+                                    DropdownMenuItem(
+                                      value: c,
+                                      child: Text(_friendly(c).toUpperCase(), overflow: TextOverflow.ellipsis),
+                                    ),
                                 ],
                                 onChanged: (v) {
                                   if (v != null) setState(() => _catA = v);
@@ -289,7 +312,10 @@ class _StatsScreenState extends State<StatsScreen> {
                                 style: t.textTheme.bodyMedium,
                                 items: [
                                   for (final c in kCategories)
-                                    DropdownMenuItem(value: c, child: Text(_friendly(c).toUpperCase())),
+                                    DropdownMenuItem(
+                                      value: c,
+                                      child: Text(_friendly(c).toUpperCase(), overflow: TextOverflow.ellipsis),
+                                    ),
                                 ],
                                 onChanged: (v) {
                                   if (v != null) setState(() => _catB = v);
@@ -309,7 +335,10 @@ class _StatsScreenState extends State<StatsScreen> {
                           foregroundColor: t.colorScheme.onPrimary,
                         ),
                         onPressed: _probing ? null : _runProbe,
-                        child: Text(_probing ? 'Calculating…' : 'Run Correlation Probe'),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(_probing ? 'Calculating…' : 'Run Correlation Probe'),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -347,9 +376,20 @@ class _StatsScreenState extends State<StatsScreen> {
     return Expanded(
       child: Column(
         children: [
-          Text('$value', style: t.textTheme.displaySmall?.copyWith(fontSize: 34, color: AppColors.brass)),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text('$value', style: t.textTheme.displaySmall?.copyWith(fontSize: 34, color: AppColors.brass)),
+          ),
           const SizedBox(height: 2),
-          Text(label, style: t.textTheme.labelSmall),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label,
+              style: t.textTheme.labelSmall,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
         ],
       ),
     );
@@ -379,6 +419,8 @@ class _StatsScreenState extends State<StatsScreen> {
               '7d ${tr.mean7.toStringAsFixed(1)} · 30d ${tr.mean30.toStringAsFixed(1)} · '
               '${tr.deltaPct >= 0 ? '+' : ''}${tr.deltaPct.toStringAsFixed(0)}% · ${tr.trend.toUpperCase()}',
               style: t.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
@@ -398,18 +440,26 @@ class _StatsScreenState extends State<StatsScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            _friendly(cat).toUpperCase(),
-            style: t.textTheme.labelSmall?.copyWith(
-              color: d.n > 0 ? t.colorScheme.onSurface : t.colorScheme.onSurfaceVariant,
-              fontSize: 11,
+          Flexible(
+            child: Text(
+              _friendly(cat).toUpperCase(),
+              style: t.textTheme.labelSmall?.copyWith(
+                color: d.n > 0 ? t.colorScheme.onSurface : t.colorScheme.onSurfaceVariant,
+                fontSize: 11,
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
-          Text(
-            '${d.n} logs${amt.isEmpty ? '' : '  ·  $amt'}',
-            style: t.textTheme.bodySmall?.copyWith(
-              color: d.n > 0 ? AppColors.brass : t.colorScheme.onSurfaceVariant,
-              fontWeight: d.n > 0 ? FontWeight.w600 : FontWeight.normal,
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              '${d.n} logs${amt.isEmpty ? '' : '  ·  $amt'}',
+              style: t.textTheme.bodySmall?.copyWith(
+                color: d.n > 0 ? AppColors.brass : t.colorScheme.onSurfaceVariant,
+                fontWeight: d.n > 0 ? FontWeight.w600 : FontWeight.normal,
+              ),
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.end,
             ),
           ),
         ],

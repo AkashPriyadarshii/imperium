@@ -59,11 +59,14 @@ class _HistoryBodyState extends State<_HistoryBody> {
             decoration: InputDecoration(
               hintText: 'Search notes, emojis, categories…',
               isDense: true,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               prefixIcon: const Icon(Icons.search, size: 20),
               suffixIcon: _q.isEmpty
                   ? null
                   : IconButton(
                       icon: const Icon(Icons.clear, size: 18),
+                      padding: const EdgeInsets.all(8),
+                      constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
                       onPressed: () => setState(() {
                         _search.clear();
                         _q = '';
@@ -79,9 +82,11 @@ class _HistoryBodyState extends State<_HistoryBody> {
 
         // Category filter chips
         SizedBox(
-          height: 36,
+          height: 38,
           child: ListView(
             scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+            clipBehavior: Clip.none,
             padding: const EdgeInsets.symmetric(horizontal: 16),
             children: [
               _filterChip('ALL', _selectedCategory == null, () => setState(() => _selectedCategory = null)),
@@ -184,27 +189,33 @@ class _HistoryBodyState extends State<_HistoryBody> {
       list.add(
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 6),
-          child: Row(
-            children: [
-              Text(
-                key.toUpperCase(),
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: AppColors.brass,
-                      letterSpacing: 2,
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
-              const Spacer(),
-              Text(
-                '${dayList.length} LOGS'
-                '${sleepHours > 0 ? ' · ${sleepHours.toStringAsFixed(1)}H SLEEP' : ''}'
-                '${spendTotal > 0 ? ' · ₹${spendTotal.toStringAsFixed(0)}' : ''}',
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      fontSize: 9.5,
-                    ),
-              ),
-            ],
+          child: SizedBox(
+            width: double.infinity,
+            child: Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 8,
+              runSpacing: 4,
+              children: [
+                Text(
+                  key.toUpperCase(),
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: AppColors.brass,
+                        letterSpacing: 2,
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+                Text(
+                  '${dayList.length} LOGS'
+                  '${sleepHours > 0 ? ' · ${sleepHours.toStringAsFixed(1)}H SLEEP' : ''}'
+                  '${spendTotal > 0 ? ' · ₹${spendTotal.toStringAsFixed(0)}' : ''}',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        fontSize: 9.5,
+                      ),
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -238,6 +249,7 @@ class _EntryCard extends StatelessWidget {
           border: Border.all(color: t.colorScheme.outlineVariant),
         ),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Expanded(
               child: Column(
@@ -257,8 +269,11 @@ class _EntryCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 3),
-                  Row(
+                  const SizedBox(height: 4),
+                  Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 6,
+                    runSpacing: 2,
                     children: [
                       Text(
                         entry.category.replaceAll('-', ' ').toUpperCase(),
@@ -269,17 +284,15 @@ class _EntryCard extends StatelessWidget {
                       ),
                       if (entry.amount != null) ...[
                         Text(
-                          '  ·  ${entry.amount}${entry.unit != null && entry.unit!.isNotEmpty ? ' ${entry.unit}' : ''}',
+                          '·  ${entry.amount}${entry.unit != null && entry.unit!.isNotEmpty ? ' ${entry.unit}' : ''}',
                           style: t.textTheme.labelSmall?.copyWith(fontSize: 9.5),
                         ),
                       ],
                       if (entry.rating != null) ...[
-                        const SizedBox(width: 4),
-                        Text(' ★' * entry.rating!, style: const TextStyle(color: AppColors.brass, fontSize: 10)),
+                        Text('★' * entry.rating!, style: const TextStyle(color: AppColors.brass, fontSize: 10)),
                       ],
-                      const Spacer(),
                       Text(
-                        timeStr,
+                        '·  $timeStr',
                         style: t.textTheme.labelSmall?.copyWith(
                           color: t.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
                           fontSize: 9,
@@ -292,12 +305,16 @@ class _EntryCard extends StatelessWidget {
             ),
             IconButton(
               icon: const Icon(Icons.edit_outlined, size: 18),
+              padding: const EdgeInsets.all(8),
+              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
               tooltip: 'Edit',
               color: t.colorScheme.onSurfaceVariant,
               onPressed: () => _editFull(context),
             ),
             IconButton(
               icon: const Icon(Icons.delete_outline, size: 18),
+              padding: const EdgeInsets.all(8),
+              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
               tooltip: 'Delete',
               color: t.colorScheme.onSurfaceVariant,
               onPressed: () async {
@@ -420,151 +437,154 @@ class _EditEntrySheetState extends State<_EditEntrySheet> {
     final style = Theme.of(context).textTheme;
     final cs = Theme.of(context).colorScheme;
 
-    return Padding(
-      padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(context).viewInsets.bottom + 20),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text(
-                  'EDIT ENTRY',
-                  style: style.labelLarge?.copyWith(color: AppColors.brass, letterSpacing: 1.5),
-                ),
-                const Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.close, size: 20),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.of(context).viewInsets.bottom + 20),
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    'EDIT ENTRY',
+                    style: style.labelLarge?.copyWith(color: AppColors.brass, letterSpacing: 1.5),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.close, size: 20),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
 
-            // Category Chips
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: [
-                for (final cat in kCategories)
-                  GestureDetector(
-                    onTap: () => setState(() {
-                      _category = cat;
-                      if (_unitCtrl.text.isEmpty) {
-                        _unitCtrl.text = defaultUnitFor(cat);
-                      }
-                    }),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: _category == cat ? AppColors.brass : cs.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        cat.toUpperCase().replaceAll('-', ' '),
-                        style: style.labelSmall?.copyWith(
-                          color: _category == cat ? AppColors.bg : cs.onSurface,
-                          fontSize: 9.5,
+              // Category Chips
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  for (final cat in kCategories)
+                    GestureDetector(
+                      onTap: () => setState(() {
+                        _category = cat;
+                        if (_unitCtrl.text.isEmpty) {
+                          _unitCtrl.text = defaultUnitFor(cat);
+                        }
+                      }),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: _category == cat ? AppColors.brass : cs.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          cat.toUpperCase().replaceAll('-', ' '),
+                          style: style.labelSmall?.copyWith(
+                            color: _category == cat ? AppColors.bg : cs.onSurface,
+                            fontSize: 9.5,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 14),
-
-            TextField(
-              controller: _noteCtrl,
-              style: TextStyle(color: cs.onSurface, fontFamily: AppType.ledger),
-              decoration: InputDecoration(
-                labelText: 'Note',
-                labelStyle: TextStyle(color: cs.onSurfaceVariant),
-                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: cs.outlineVariant)),
-                focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppColors.brass)),
+                ],
               ),
-            ),
-            const SizedBox(height: 12),
+              const SizedBox(height: 14),
 
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _amountCtrl,
-                    keyboardType: TextInputType.number,
-                    style: TextStyle(color: cs.onSurface, fontFamily: AppType.ledger),
-                    decoration: InputDecoration(
-                      labelText: 'Amount',
-                      labelStyle: TextStyle(color: cs.onSurfaceVariant),
-                      enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: cs.outlineVariant)),
-                      focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppColors.brass)),
-                    ),
-                  ),
+              TextField(
+                controller: _noteCtrl,
+                style: TextStyle(color: cs.onSurface, fontFamily: AppType.ledger),
+                decoration: InputDecoration(
+                  labelText: 'Note',
+                  labelStyle: TextStyle(color: cs.onSurfaceVariant),
+                  enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: cs.outlineVariant)),
+                  focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppColors.brass)),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextField(
-                    controller: _unitCtrl,
-                    style: TextStyle(color: cs.onSurface, fontFamily: AppType.ledger),
-                    decoration: InputDecoration(
-                      labelText: 'Unit',
-                      labelStyle: TextStyle(color: cs.onSurfaceVariant),
-                      enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: cs.outlineVariant)),
-                      focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppColors.brass)),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
+              ),
+              const SizedBox(height: 12),
 
-            // Rating Stars
-            Row(
-              children: [
-                Text('Rating: ', style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12)),
-                for (var r = 1; r <= 5; r++)
-                  GestureDetector(
-                    onTap: () => setState(() => _rating = _rating == r ? null : r),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 2),
-                      child: Icon(
-                        _rating != null && r <= _rating! ? Icons.star : Icons.star_border,
-                        color: AppColors.brass,
-                        size: 22,
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _amountCtrl,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      style: TextStyle(color: cs.onSurface, fontFamily: AppType.ledger),
+                      decoration: InputDecoration(
+                        labelText: 'Amount',
+                        labelStyle: TextStyle(color: cs.onSurfaceVariant),
+                        enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: cs.outlineVariant)),
+                        focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppColors.brass)),
                       ),
                     ),
                   ),
-              ],
-            ),
-            const SizedBox(height: 14),
-
-            // Date & Time Picker button
-            TextButton.icon(
-              onPressed: _pickDateTime,
-              icon: const Icon(Icons.schedule, size: 18, color: AppColors.brass),
-              label: Text(
-                '${_loggedAt.year}-${_loggedAt.month.toString().padLeft(2, '0')}-${_loggedAt.day.toString().padLeft(2, '0')}  ${_loggedAt.hour.toString().padLeft(2, '0')}:${_loggedAt.minute.toString().padLeft(2, '0')}',
-                style: TextStyle(color: cs.onSurface),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextField(
+                      controller: _unitCtrl,
+                      style: TextStyle(color: cs.onSurface, fontFamily: AppType.ledger),
+                      decoration: InputDecoration(
+                        labelText: 'Unit',
+                        labelStyle: TextStyle(color: cs.onSurfaceVariant),
+                        enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: cs.outlineVariant)),
+                        focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppColors.brass)),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 14),
 
-            SizedBox(
-              width: double.infinity,
-              height: 44,
-              child: FilledButton(
-                onPressed: _save,
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.brass,
-                  foregroundColor: AppColors.bg,
+              // Rating Stars
+              Row(
+                children: [
+                  Text('Rating: ', style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12)),
+                  for (var r = 1; r <= 5; r++)
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => setState(() => _rating = _rating == r ? null : r),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                        child: Icon(
+                          _rating != null && r <= _rating! ? Icons.star : Icons.star_border,
+                          color: AppColors.brass,
+                          size: 22,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 14),
+
+              // Date & Time Picker button
+              TextButton.icon(
+                onPressed: _pickDateTime,
+                icon: const Icon(Icons.schedule, size: 18, color: AppColors.brass),
+                label: Text(
+                  '${_loggedAt.year}-${_loggedAt.month.toString().padLeft(2, '0')}-${_loggedAt.day.toString().padLeft(2, '0')}  ${_loggedAt.hour.toString().padLeft(2, '0')}:${_loggedAt.minute.toString().padLeft(2, '0')}',
+                  style: TextStyle(color: cs.onSurface),
                 ),
-                child: const Text('SAVE CHANGES', style: TextStyle(fontFamily: AppType.monument)),
               ),
-            ),
-          ],
+              const SizedBox(height: 16),
+
+              SizedBox(
+                width: double.infinity,
+                height: 44,
+                child: FilledButton(
+                  onPressed: _save,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.brass,
+                    foregroundColor: AppColors.bg,
+                  ),
+                  child: const Text('SAVE CHANGES', style: TextStyle(fontFamily: AppType.monument)),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
-

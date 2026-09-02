@@ -187,10 +187,14 @@ class _AutomationScreenState extends State<AutomationScreen>
           Expanded(
             child: InkWell(
               onTap: onTap,
-              child: Text('$label  ${time.format(context)}',
-                  style: TextStyle(color: cs.onSurface)),
+              child: Text(
+                '$label  ${time.format(context)}',
+                style: TextStyle(color: cs.onSurface),
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ),
+          const SizedBox(width: 8),
           Switch(
             value: value,
             onChanged: onChanged,
@@ -289,21 +293,23 @@ class _AutomationScreenState extends State<AutomationScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
+        Wrap(
+          spacing: 12,
+          runSpacing: 8,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             DropdownButton<int>(
               value: sel == null ? null : _targetHabitId,
               hint: Text('Target habit', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
               dropdownColor: Theme.of(context).colorScheme.surfaceContainerHighest,
               style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
-              items: _habs.map((h) => DropdownMenuItem(value: h.id, child: Text(h.name))).toList(),
+              items: _habs.map((h) => DropdownMenuItem(value: h.id, child: Text(h.name, overflow: TextOverflow.ellipsis))).toList(),
               onChanged: (v) async {
                 setState(() => _targetHabitId = v ?? -1);
                 final p = await SharedPreferences.getInstance();
                 await p.setInt('${_kPref}targetHabitId', v ?? -1);
               },
             ),
-            const SizedBox(width: 12),
             DropdownButton<int>(
               value: _targetCount,
               dropdownColor: Theme.of(context).colorScheme.surfaceContainerHighest,
@@ -350,37 +356,42 @@ class _HabitWeekStrip extends StatelessWidget {
       future: _fetchWeek(),
       builder: (context, snap) {
         final checks = snap.data ?? List.filled(7, false);
-        return Row(
-          children: [
-            for (var i = 0; i < 7; i++) ...[
-              Column(
-                children: [
-                  Text(
-                    _days[i],
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      fontSize: 9,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Container(
-                    width: 14,
-                    height: 14,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: checks[i] ? AppColors.brass : Colors.transparent,
-                      border: Border.all(
-                        color: checks[i] ? AppColors.brass : Theme.of(context).colorScheme.outlineVariant,
-                        width: 1.2,
+        return FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (var i = 0; i < 7; i++) ...[
+                Column(
+                  children: [
+                    Text(
+                      _days[i],
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ),
-                ],
-              ),
-              if (i < 6) const SizedBox(width: 8),
+                    const SizedBox(height: 2),
+                    Container(
+                      width: 14,
+                      height: 14,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: checks[i] ? AppColors.brass : Colors.transparent,
+                        border: Border.all(
+                          color: checks[i] ? AppColors.brass : Theme.of(context).colorScheme.outlineVariant,
+                          width: 1.2,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                if (i < 6) const SizedBox(width: 8),
+              ],
             ],
-          ],
+          ),
         );
       },
     );

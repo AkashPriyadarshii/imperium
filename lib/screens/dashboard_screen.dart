@@ -5,7 +5,6 @@ import '../services/quotes.dart';
 import '../services/stats_engine.dart';
 import '../theme/theme.dart';
 import 'batch_screen.dart';
-import 'history_screen.dart';
 import 'log_screen.dart';
 
 const List<String> _months = [
@@ -204,7 +203,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           );
         },
       ),
-      floatingActionButton: _AddFab(db: widget.db, selectedDate: _selectedDate),
     );
   }
 
@@ -224,55 +222,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
               icon: const Icon(Icons.chevron_left, size: 22),
               color: Theme.of(context).colorScheme.onSurfaceVariant,
               padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              constraints: const BoxConstraints(minWidth: 28, minHeight: 32),
               tooltip: 'Previous day',
             ),
             GestureDetector(
               onTap: _pickDate,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          '${_months[_selectedDate.month - 1].toUpperCase()} ${_selectedDate.day}',
-                          style: style.headlineSmall?.copyWith(color: Theme.of(context).colorScheme.onSurface),
-                        ),
-                        const SizedBox(width: 4),
-                        Icon(Icons.arrow_drop_down, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
-                      ],
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '${_months[_selectedDate.month - 1].toUpperCase()} ${_selectedDate.day}',
+                    style: style.headlineSmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface,
+                      fontSize: 18,
                     ),
-                    const SizedBox(height: 2),
-                    Row(
-                      children: [
-                        Text(
-                          _weekdays[_selectedDate.weekday - 1].toUpperCase(),
-                          style: style.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
-                        ),
-                        if (!_isToday) ...[
-                          const SizedBox(width: 8),
-                          GestureDetector(
-                            onTap: () => setState(() => _selectedDate = DateTime.now()),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                              decoration: BoxDecoration(
-                                color: AppColors.brass.withValues(alpha: 0.2),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                'JUMP TO TODAY',
-                                style: style.labelSmall?.copyWith(color: AppColors.brass, fontSize: 8.5),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(width: 2),
+                  Icon(Icons.arrow_drop_down, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                ],
               ),
             ),
             IconButton(
@@ -282,48 +249,83 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ? Theme.of(context).colorScheme.onSurfaceVariant
                   : Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.3),
               padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              constraints: const BoxConstraints(minWidth: 28, minHeight: 32),
               tooltip: 'Next day',
             ),
             const Spacer(),
-            // Top Bar Action Buttons
             IconButton(
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => BatchScreen(db: widget.db)),
               ),
-              icon: const Icon(Icons.content_paste, size: 20),
+              icon: const Icon(Icons.content_paste, size: 18),
               color: Theme.of(context).colorScheme.onSurfaceVariant,
-              splashRadius: 20,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
               tooltip: 'Batch Import',
             ),
-            IconButton(
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => HistoryScreen(db: widget.db)),
-              ),
-              icon: const Icon(Icons.history, size: 20),
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-              splashRadius: 20,
-              tooltip: 'History',
-            ),
-            const SizedBox(width: 4),
+            const SizedBox(width: 6),
             FutureBuilder(
               future: StatsEngine(widget.db).overallStreak(now),
               builder: (context, snap) {
                 final streak = snap.data?.current ?? 1;
-                return Text(
-                  'DAY $streak',
-                  style: style.displaySmall?.copyWith(
-                    fontSize: 20,
-                    color: (snap.data?.atRisk ?? false) ? Theme.of(context).colorScheme.error : AppColors.brass,
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: AppColors.brass.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: AppColors.brass.withValues(alpha: 0.4), width: 0.8),
+                  ),
+                  child: Text(
+                    'DAY $streak',
+                    style: style.labelSmall?.copyWith(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.2,
+                      color: (snap.data?.atRisk ?? false) ? Theme.of(context).colorScheme.error : AppColors.brass,
+                    ),
                   ),
                 );
               },
             ),
           ],
         ),
+        const SizedBox(height: 4),
+        Padding(
+          padding: const EdgeInsets.only(left: 28),
+          child: Row(
+            children: [
+              Text(
+                _weekdays[_selectedDate.weekday - 1].toUpperCase(),
+                style: style.labelSmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontSize: 10,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              if (!_isToday) ...[
+                const SizedBox(width: 10),
+                GestureDetector(
+                  onTap: () => setState(() => _selectedDate = DateTime.now()),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppColors.brass.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      'JUMP TO TODAY',
+                      style: style.labelSmall?.copyWith(color: AppColors.brass, fontSize: 8.5, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
       ],
     );
   }
+
 
   Widget _quoteCard(BuildContext context) {
     final style = Theme.of(context).textTheme;
@@ -416,30 +418,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ],
         );
       },
-    );
-  }
-}
-
-class _AddFab extends StatelessWidget {
-  const _AddFab({required this.db, required this.selectedDate});
-  final AppDb db;
-  final DateTime selectedDate;
-
-  @override
-  Widget build(BuildContext context) {
-    return FloatingActionButton(
-      onPressed: () => Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => LogScreen(
-            db: db,
-            initialDate: selectedDate,
-          ),
-        ),
-      ),
-      backgroundColor: Theme.of(context).colorScheme.primary,
-      foregroundColor: Theme.of(context).colorScheme.onPrimary,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      child: const Icon(Icons.add),
     );
   }
 }

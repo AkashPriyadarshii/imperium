@@ -146,25 +146,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           _section('DATA'),
           _card([
-            FilledButton.icon(
-              style: FilledButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.primary, foregroundColor: Theme.of(context).colorScheme.onPrimary),
-              onPressed: _export,
-              icon: const Icon(Icons.upload_file, size: 18),
-              label: const Text('Export JSON'),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                style: FilledButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.primary, foregroundColor: Theme.of(context).colorScheme.onPrimary),
+                onPressed: _export,
+                icon: const Icon(Icons.upload_file, size: 18),
+                label: const Text('Export JSON'),
+              ),
             ),
             if (_exportMsg != null) ...[
               const SizedBox(height: 8),
               Text(_exportMsg!, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12)),
             ],
             const SizedBox(height: 16),
-            OutlinedButton.icon(
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Theme.of(context).colorScheme.onSurface,
-                side: BorderSide(color: Theme.of(context).colorScheme.outline),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Theme.of(context).colorScheme.onSurface,
+                  side: BorderSide(color: Theme.of(context).colorScheme.outline),
+                ),
+                onPressed: _import,
+                icon: const Icon(Icons.file_open, size: 18),
+                label: const Text('Import JSON'),
               ),
-              onPressed: _import,
-              icon: const Icon(Icons.file_open, size: 18),
-              label: const Text('Import JSON'),
             ),
             if (_importMsg != null) ...[
               const SizedBox(height: 8),
@@ -222,14 +228,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            FilledButton(
-              style: FilledButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.error,
-                foregroundColor: AppColors.lightSurface,
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.error,
+                  foregroundColor: AppColors.lightSurface,
+                ),
+                onPressed:
+                    (_resetWarnAccepted && _resetTyped == 'RESET') ? _onResetPressed : null,
+                child: const FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text('Reset everything'),
+                ),
               ),
-              onPressed:
-                  (_resetWarnAccepted && _resetTyped == 'RESET') ? _onResetPressed : null,
-              child: const Text('Reset everything'),
             ),
           ]),
           const SizedBox(height: 24),
@@ -276,24 +288,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           _section('THEME'),
           _card([
-            SegmentedButton<String>(
-              segments: const [
-                ButtonSegment(value: 'dark', label: Text('Dark')),
-                ButtonSegment(value: 'light', label: Text('Light')),
-                ButtonSegment(value: 'system', label: Text('System')),
-              ],
-              selected: {_theme},
-              onSelectionChanged: (s) {
-                final next = s.first;
-                setState(() => _theme = next);
-                themeNotifier.value = next;
-                _setPref('theme', next);
-              },
-              style: ButtonStyle(
-                foregroundColor: WidgetStateProperty.resolveWith(
-                  (states) => states.contains(WidgetState.selected) ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurfaceVariant),
-                backgroundColor: WidgetStateProperty.resolveWith(
-                  (states) => states.contains(WidgetState.selected) ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.surfaceContainerHighest),
+            SizedBox(
+              width: double.infinity,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: SegmentedButton<String>(
+                  segments: const [
+                    ButtonSegment(value: 'dark', label: Text('Dark')),
+                    ButtonSegment(value: 'light', label: Text('Light')),
+                    ButtonSegment(value: 'system', label: Text('System')),
+                  ],
+                  selected: {_theme},
+                  onSelectionChanged: (s) {
+                    final next = s.first;
+                    setState(() => _theme = next);
+                    themeNotifier.value = next;
+                    _setPref('theme', next);
+                  },
+                  style: ButtonStyle(
+                    foregroundColor: WidgetStateProperty.resolveWith(
+                      (states) => states.contains(WidgetState.selected) ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurfaceVariant),
+                    backgroundColor: WidgetStateProperty.resolveWith(
+                      (states) => states.contains(WidgetState.selected) ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.surfaceContainerHighest),
+                  ),
+                ),
               ),
             ),
           ]),
@@ -345,6 +364,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       );
 
   Widget _card(List<Widget> children) => Container(
+        width: double.infinity,
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surfaceContainerHighest,

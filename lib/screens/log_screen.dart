@@ -175,12 +175,15 @@ class _LogFormState extends State<_LogForm> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 8,
+              runSpacing: 4,
               children: [
                 Text('LOG TIME', style: style.labelSmall?.copyWith(color: AppColors.brass)),
-                const Spacer(),
                 Text(
-                  '${_loggedAt.year}-${LogScreen._dateKey(_loggedAt).substring(5)}  ${_loggedAt.hour.toString().padLeft(2, '0')}:${_loggedAt.minute.toString().padLeft(2, '0')}',
+                  '${_loggedAt.year}-${LogScreen._dateKey(_loggedAt).substring(5)}  ${_loggedAt.hour.toString().padLeft(2, '0')}:${_loggedAt.minute.toString().padLeft(2, '0')} ${!_backfill ? '(TODAY)' : ''}',
                   style: style.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary),
                 ),
               ],
@@ -283,15 +286,20 @@ class _LogFormState extends State<_LogForm> {
               const SizedBox(height: 16),
 
               // Rating stars.
-              Row(
+              Wrap(
+                spacing: 2,
                 children: [
                   for (final r in _ratings)
                     GestureDetector(
+                      behavior: HitTestBehavior.opaque,
                       onTap: () => setState(() => _rating = _rating == r ? null : r),
-                      child: Icon(
-                        _rating != null && r <= _rating! ? Icons.star : Icons.star_border,
-                        color: AppColors.brass,
-                        size: 28,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
+                        child: Icon(
+                          _rating != null && r <= _rating! ? Icons.star : Icons.star_border,
+                          color: AppColors.brass,
+                          size: 28,
+                        ),
                       ),
                     ),
                 ],
@@ -304,17 +312,19 @@ class _LogFormState extends State<_LogForm> {
                   Expanded(
                     child: TextField(
                       controller: _amount,
-                      keyboardType: TextInputType.number,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       style: TextStyle(color: cardText, fontFamily: AppType.ledger),
                       decoration: InputDecoration(
                         hintText: 'Amount',
                         hintStyle: TextStyle(color: cardMuted),
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(vertical: 8),
                         enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant)),
                         focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppColors.goldDeep)),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 16),
                   Expanded(
                     child: TextField(
                       controller: _unitController,
@@ -323,6 +333,8 @@ class _LogFormState extends State<_LogForm> {
                       decoration: InputDecoration(
                         hintText: 'Unit',
                         hintStyle: TextStyle(color: cardMuted),
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(vertical: 8),
                         enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant)),
                         focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppColors.goldDeep)),
                       ),
@@ -469,16 +481,22 @@ class _RecentRow extends StatelessWidget {
           ),
           IconButton(
             icon: Icon(Icons.replay, size: 18, color: Theme.of(context).colorScheme.primary),
+            padding: const EdgeInsets.all(6),
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
             tooltip: 'Repeat',
             onPressed: () => onRepeat(entry),
           ),
           IconButton(
             icon: Icon(Icons.edit, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            padding: const EdgeInsets.all(6),
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
             tooltip: 'Edit',
             onPressed: () => _edit(context),
           ),
           IconButton(
             icon: Icon(Icons.delete_outline, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            padding: const EdgeInsets.all(6),
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
             tooltip: 'Delete',
             onPressed: () => _confirmDelete(context),
           ),
