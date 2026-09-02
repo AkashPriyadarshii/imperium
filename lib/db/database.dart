@@ -150,6 +150,14 @@ class AppDb extends _$AppDb {
     return n?.note;
   }
 
-  Future<void> setNote(String date, String note) => into(dailyNotes)
-      .insertOnConflictUpdate(DailyNotesCompanion.insert(date: date, note: note));
+  Future<void> setNote(String date, String note) async {
+    final existing = await (select(dailyNotes)..where((t) => t.date.equals(date))).getSingleOrNull();
+    if (existing != null) {
+      await (update(dailyNotes)..where((t) => t.id.equals(existing.id)))
+          .write(DailyNotesCompanion(note: Value(note)));
+    } else {
+      await into(dailyNotes).insert(DailyNotesCompanion.insert(date: date, note: note));
+    }
+  }
 }
+

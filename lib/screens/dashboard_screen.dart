@@ -4,6 +4,7 @@ import '../db/database.dart';
 import '../services/quotes.dart';
 import '../services/stats_engine.dart';
 import '../theme/theme.dart';
+import 'batch_screen.dart';
 import 'history_screen.dart';
 import 'log_screen.dart';
 
@@ -15,8 +16,8 @@ const List<String> _weekdays = [
   'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
 ];
 
-/// Dashboard-first home. Dark imperial field.
-class DashboardScreen extends StatelessWidget {
+/// Dashboard-first home. Dark imperial field with date navigation and reflection journal.
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key, required this.db});
 
   final AppDb db;
@@ -27,124 +28,294 @@ class DashboardScreen extends StatelessWidget {
     return '${d.year}-$m-$day';
   }
 
-  bool _sameDay(DateTime a, DateTime b) =>
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  DateTime _selectedDate = DateTime.now();
+
+  static bool _sameDay(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
+
+  bool get _isToday {
+    final now = DateTime.now();
+    return _sameDay(_selectedDate, now);
+  }
+
+  void _prevDay() {
+    setState(() {
+      _selectedDate = _selectedDate.subtract(const Duration(days: 1));
+    });
+  }
+
+  void _nextDay() {
+    final now = DateTime.now();
+    if (_sameDay(_selectedDate, now)) return;
+    setState(() {
+      _selectedDate = _selectedDate.add(const Duration(days: 1));
+    });
+  }
+
+  Future<void> _pickDate() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2020),
+      lastDate: now,
+    );
+    if (picked != null && mounted) {
+      setState(() => _selectedDate = picked);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final now = DateTime.now();
-    final logicalNow = now.subtract(const Duration(hours: 4));
+    final logicalSelected = _selectedDate.subtract(const Duration(hours: 4));
     final style = Theme.of(context).textTheme;
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: StreamBuilder<List<Entry>>(
-        stream: db.watchAllEntries(),
+        stream: widget.db.watchAllEntries(),
         builder: (context, snap) {
           final entries = snap.data ?? const <Entry>[];
-          final today = entries.where((e) {
+          final dayEntries = entries.where((e) {
             final logicalEntryDate = DateTime.fromMillisecondsSinceEpoch(e.loggedAt).subtract(const Duration(hours: 4));
-            return _sameDay(logicalEntryDate, logicalNow);
+            return _sameDay(logicalEntryDate, logicalSelected);
           }).toList();
-          final todayCats = today.map((e) => e.category).toSet();
-
-          final doneCount = kCategories.where(todayCats.contains).length;
+          final dayCats = dayEntries.map((e) => e.category).toSet();
+          final doneCount = kCategories.where(dayCats.contains).length;
+          final allDone = doneCount == kCategories.length;
 
           return SafeArea(
             child: CustomScrollView(
               slivers: [
                 SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                  sliver: SliverToBoxAdapter(
+                    child: _header(context),
+                  ),
+                ),
+                SliverPadding(
                   padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
                   sliver: SliverToBoxAdapter(
-                    child: _header(context, now),
+                    child: _quoteCard(context),
                   ),
                 ),
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
-                sliver: SliverToBoxAdapter(
-                  child: _quoteCard(context),
-                ),
-              ),
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(20, 28, 20, 8),
-                sliver: SliverToBoxAdapter(
-                  child: Row(
-                    children: [
-                      Text('TODAY\'S DISCIPLINE', style: style.labelSmall?.copyWith(color: AppColors.brass)),
-                      const Spacer(),
-                      Text('$doneCount / ${kCategories.length}', style: style.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
-                    ],
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
+                  sliver: SliverToBoxAdapter(
+                    child: Row(
+                      children: [
+                        Text(
+                          _isToday ? 'TODAY\'S DISCIPLINE' : 'DISCIPLINE LEDGER',
+                          style: style.labelSmall?.copyWith(color: AppColors.brass),
+                        ),
+                        if (allDone) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.goldDeep.withValues(alpha: 0.3),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(color: AppColors.brass, width: 0.8),
+                            ),
+                            child: const Text(
+                              'PERACTA',
+                              style: TextStyle(
+                                fontFamily: AppType.monument,
+                                fontSize: 9,
+                                letterSpacing: 1.5,
+                                color: AppColors.brass,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                        const Spacer(),
+                        Text(
+                          '$doneCount / ${kCategories.length}',
+                          style: style.labelSmall?.copyWith(
+                            color: allDone ? AppColors.brass : Theme.of(context).colorScheme.onSurfaceVariant,
+                            fontWeight: allDone ? FontWeight.bold : FontWeight.normal,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                sliver: SliverList.builder(
-                  itemCount: kCategories.length,
-                  itemBuilder: (context, i) => RepaintBoundary(
-                    child: _LedgerRow(label: kCategories[i], entries: today.where((e) => e.category == kCategories[i]).toList()),
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  sliver: SliverList.builder(
+                    itemCount: kCategories.length,
+                    itemBuilder: (context, i) {
+                      final cat = kCategories[i];
+                      final catEntries = dayEntries.where((e) => e.category == cat).toList();
+                      return RepaintBoundary(
+                        child: _LedgerRow(
+                          label: cat,
+                          entries: catEntries,
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => LogScreen(
+                                db: widget.db,
+                                initialCategory: cat,
+                                initialDate: _selectedDate,
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
-              ),
-              SliverToBoxAdapter(
-                child: Container(height: 1, color: AppColors.goldDeep, margin: const EdgeInsets.fromLTRB(20, 20, 20, 4)),
-              ),
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                sliver: SliverToBoxAdapter(
-                  child: _scoreboard(context, entries),
+                SliverToBoxAdapter(
+                  child: Container(
+                    height: 1,
+                    color: AppColors.goldDeep,
+                    margin: const EdgeInsets.fromLTRB(20, 16, 20, 4),
+                  ),
                 ),
-              ),
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
-                sliver: SliverToBoxAdapter(
-                  child: _habits(context),
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  sliver: SliverToBoxAdapter(
+                    child: _scoreboard(context, entries),
+                  ),
                 ),
-              ),
-            ],
-          ),
-        );
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
+                  sliver: SliverToBoxAdapter(
+                    child: _habits(context),
+                  ),
+                ),
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
+                  sliver: SliverToBoxAdapter(
+                    child: _DailyReflectionCard(
+                      db: widget.db,
+                      dateKey: DashboardScreen._dateKey(_selectedDate),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
         },
       ),
-      floatingActionButton: _AddFab(db: db),
+      floatingActionButton: _AddFab(db: widget.db, selectedDate: _selectedDate),
     );
   }
 
-  Widget _header(BuildContext context, DateTime now) {
+  Widget _header(BuildContext context) {
     final style = Theme.of(context).textTheme;
+    final now = DateTime.now();
+    final canGoNext = !_sameDay(_selectedDate, now);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('${_months[now.month - 1].toUpperCase()} ${now.day}', style: style.headlineSmall?.copyWith(color: Theme.of(context).colorScheme.onSurface)),
-                  const SizedBox(height: 4),
-                  Text(_weekdays[now.weekday - 1].toUpperCase(), style: style.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
-                ],
+            // Date navigation controls
+            IconButton(
+              onPressed: _prevDay,
+              icon: const Icon(Icons.chevron_left, size: 22),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              tooltip: 'Previous day',
+            ),
+            GestureDetector(
+              onTap: _pickDate,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '${_months[_selectedDate.month - 1].toUpperCase()} ${_selectedDate.day}',
+                          style: style.headlineSmall?.copyWith(color: Theme.of(context).colorScheme.onSurface),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(Icons.arrow_drop_down, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        Text(
+                          _weekdays[_selectedDate.weekday - 1].toUpperCase(),
+                          style: style.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                        ),
+                        if (!_isToday) ...[
+                          const SizedBox(width: 8),
+                          GestureDetector(
+                            onTap: () => setState(() => _selectedDate = DateTime.now()),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                              decoration: BoxDecoration(
+                                color: AppColors.brass.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                'JUMP TO TODAY',
+                                style: style.labelSmall?.copyWith(color: AppColors.brass, fontSize: 8.5),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
+            IconButton(
+              onPressed: canGoNext ? _nextDay : null,
+              icon: const Icon(Icons.chevron_right, size: 22),
+              color: canGoNext
+                  ? Theme.of(context).colorScheme.onSurfaceVariant
+                  : Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.3),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              tooltip: 'Next day',
+            ),
+            const Spacer(),
+            // Top Bar Action Buttons
+            IconButton(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => BatchScreen(db: widget.db)),
+              ),
+              icon: const Icon(Icons.content_paste, size: 20),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              splashRadius: 20,
+              tooltip: 'Batch Import',
+            ),
+            IconButton(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => HistoryScreen(db: widget.db)),
+              ),
+              icon: const Icon(Icons.history, size: 20),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              splashRadius: 20,
+              tooltip: 'History',
+            ),
+            const SizedBox(width: 4),
             FutureBuilder(
-              future: StatsEngine(db).overallStreak(now),
+              future: StatsEngine(widget.db).overallStreak(now),
               builder: (context, snap) {
                 final streak = snap.data?.current ?? 1;
-                return Row(
-                  children: [
-                    IconButton(
-                      onPressed: () => Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => HistoryScreen(db: db)),
-                      ),
-                      icon: Icon(Icons.history,
-                          size: 20, color: Theme.of(context).colorScheme.onSurfaceVariant),
-                      splashRadius: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Text('DAY $streak', style: style.displaySmall?.copyWith(fontSize: 24, color: (snap.data?.atRisk ?? false) ? Theme.of(context).colorScheme.error : AppColors.brass)),
-                  ],
+                return Text(
+                  'DAY $streak',
+                  style: style.displaySmall?.copyWith(
+                    fontSize: 20,
+                    color: (snap.data?.atRisk ?? false) ? Theme.of(context).colorScheme.error : AppColors.brass,
+                  ),
                 );
               },
             ),
@@ -156,30 +327,31 @@ class DashboardScreen extends StatelessWidget {
 
   Widget _quoteCard(BuildContext context) {
     final style = Theme.of(context).textTheme;
-    final quote = dailyQuote(DateTime.now());
+    final quote = dailyQuote(_selectedDate);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(height: 1, color: AppColors.brass, margin: const EdgeInsets.only(bottom: 16)),
+        Container(height: 1, color: AppColors.brass, margin: const EdgeInsets.only(bottom: 14)),
         Text(
           quote.text,
-          style: style.headlineMedium?.copyWith(fontSize: 24, color: Theme.of(context).colorScheme.onSurface, height: 1.4),
+          style: style.headlineMedium?.copyWith(fontSize: 22, color: Theme.of(context).colorScheme.onSurface, height: 1.35),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         Text(quote.author.toUpperCase(), style: style.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
       ],
     );
   }
 
   Widget _scoreboard(BuildContext context, List<Entry> entries) {
-    final now = DateTime.now();
-    final weekStart = DateTime(now.year, now.month, now.day).subtract(const Duration(days: 6));
+    final windowEnd = _selectedDate;
+    final weekStart = DateTime(windowEnd.year, windowEnd.month, windowEnd.day).subtract(const Duration(days: 6));
 
     double sum(String cat) {
       var total = 0.0;
       for (final e in entries) {
         if (e.category == cat &&
-            e.loggedAt >= weekStart.millisecondsSinceEpoch) {
+            e.loggedAt >= weekStart.millisecondsSinceEpoch &&
+            e.loggedAt <= windowEnd.millisecondsSinceEpoch + 86400000) {
           total += e.amount ?? 0;
         }
       }
@@ -189,7 +361,9 @@ class DashboardScreen extends StatelessWidget {
     var sleepCount = 0;
     var sleepTotal = 0.0;
     for (final e in entries) {
-      if (e.category == 'sleep' && e.loggedAt >= weekStart.millisecondsSinceEpoch) {
+      if (e.category == 'sleep' &&
+          e.loggedAt >= weekStart.millisecondsSinceEpoch &&
+          e.loggedAt <= windowEnd.millisecondsSinceEpoch + 86400000) {
         sleepCount++;
         sleepTotal += e.amount ?? 0;
       }
@@ -201,7 +375,7 @@ class DashboardScreen extends StatelessWidget {
         _stat('SLEEP AVG', '${sleepAvg.toStringAsFixed(1)}h', context),
         _stat('SPEND 7D', '₹${sum('finance').toStringAsFixed(0)}', context),
         FutureBuilder(
-          future: StatsEngine(db).overallStreak(now),
+          future: StatsEngine(widget.db).overallStreak(_selectedDate),
           builder: (context, snap) =>
               _stat('STREAK', '${snap.data?.current ?? 0}', context),
         ),
@@ -225,14 +399,21 @@ class DashboardScreen extends StatelessWidget {
 
   Widget _habits(BuildContext context) {
     return FutureBuilder<List<Habit>>(
-      future: db.allHabits(),
+      future: widget.db.allHabits(),
       builder: (context, snap) {
         final habits = snap.data ?? const <Habit>[];
         if (habits.isEmpty) return const SizedBox.shrink();
         return Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: [for (final h in habits) _HabitChip(habit: h, date: _dateKey(DateTime.now()), db: db)],
+          children: [
+            for (final h in habits)
+              _HabitChip(
+                habit: h,
+                date: DashboardScreen._dateKey(_selectedDate),
+                db: widget.db,
+              ),
+          ],
         );
       },
     );
@@ -240,14 +421,21 @@ class DashboardScreen extends StatelessWidget {
 }
 
 class _AddFab extends StatelessWidget {
-  const _AddFab({required this.db});
+  const _AddFab({required this.db, required this.selectedDate});
   final AppDb db;
+  final DateTime selectedDate;
 
   @override
   Widget build(BuildContext context) {
     return FloatingActionButton(
-      onPressed: () =>
-          Navigator.of(context).push(MaterialPageRoute(builder: (_) => LogScreen(db: db))),
+      onPressed: () => Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => LogScreen(
+            db: db,
+            initialDate: selectedDate,
+          ),
+        ),
+      ),
       backgroundColor: Theme.of(context).colorScheme.primary,
       foregroundColor: Theme.of(context).colorScheme.onPrimary,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -257,9 +445,15 @@ class _AddFab extends StatelessWidget {
 }
 
 class _LedgerRow extends StatelessWidget {
-  const _LedgerRow({required this.label, required this.entries});
+  const _LedgerRow({
+    required this.label,
+    required this.entries,
+    required this.onTap,
+  });
+
   final String label;
   final List<Entry> entries;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -270,17 +464,33 @@ class _LedgerRow extends StatelessWidget {
       amount += e.amount ?? 0;
     }
     final metric = amount > 0 ? amount.toStringAsFixed(amount % 1 == 0 ? 0 : 1) : '';
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          Text(label.toUpperCase().replaceAll('-', ' '), style: style.labelSmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
-          const SizedBox(width: 10),
-          _StatusDot(has: has),
-          const Spacer(),
-          if (metric.isNotEmpty)
-            Text(metric, style: style.labelSmall?.copyWith(color: AppColors.brass)),
-        ],
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(6),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+        child: Row(
+          children: [
+            Text(
+              label.toUpperCase().replaceAll('-', ' '),
+              style: style.labelSmall?.copyWith(
+                color: has ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(width: 10),
+            _StatusDot(has: has),
+            const Spacer(),
+            if (metric.isNotEmpty)
+              Text(metric, style: style.labelSmall?.copyWith(color: AppColors.brass)),
+            const SizedBox(width: 4),
+            Icon(
+              has ? Icons.check : Icons.add,
+              size: 14,
+              color: has ? AppColors.brass : Theme.of(context).colorScheme.outlineVariant,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -292,14 +502,15 @@ class _StatusDot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Opacity(
-      opacity: has ? 1 : 0.15,
-      child: Container(
-        width: 8,
-        height: 8,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: has ? AppColors.brass : AppColors.muted,
+    return Container(
+      width: 8,
+      height: 8,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: has ? AppColors.brass : Colors.transparent,
+        border: Border.all(
+          color: has ? AppColors.brass : Theme.of(context).colorScheme.outlineVariant,
+          width: 1.2,
         ),
       ),
     );
@@ -326,6 +537,14 @@ class _HabitChipState extends State<_HabitChip> {
   }
 
   @override
+  void didUpdateWidget(covariant _HabitChip oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.date != widget.date || oldWidget.habit.id != widget.habit.id) {
+      _future = widget.db.isHabitChecked(widget.habit.id, widget.date);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return FutureBuilder<bool>(
       future: _future,
@@ -339,15 +558,31 @@ class _HabitChipState extends State<_HabitChip> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              color: checked
+                  ? AppColors.goldDeep.withValues(alpha: 0.25)
+                  : Theme.of(context).colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: checked ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.outlineVariant),
+              border: Border.all(
+                color: checked ? AppColors.brass : Theme.of(context).colorScheme.outlineVariant,
+              ),
             ),
-            child: Text(
-              widget.habit.name.toUpperCase(),
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: checked ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  checked ? Icons.check_circle : Icons.circle_outlined,
+                  size: 14,
+                  color: checked ? AppColors.brass : Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  widget.habit.name.toUpperCase(),
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: checked ? AppColors.brass : Theme.of(context).colorScheme.onSurfaceVariant,
+                        fontWeight: checked ? FontWeight.w700 : FontWeight.w600,
+                      ),
+                ),
+              ],
             ),
           ),
         );
@@ -355,3 +590,123 @@ class _HabitChipState extends State<_HabitChip> {
     );
   }
 }
+
+/// Daily reflection / stoic journal editor connected to Drift DailyNotes.
+class _DailyReflectionCard extends StatefulWidget {
+  const _DailyReflectionCard({required this.db, required this.dateKey});
+  final AppDb db;
+  final String dateKey;
+
+  @override
+  State<_DailyReflectionCard> createState() => _DailyReflectionCardState();
+}
+
+class _DailyReflectionCardState extends State<_DailyReflectionCard> {
+  final _ctrl = TextEditingController();
+  bool _loaded = false;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void didUpdateWidget(covariant _DailyReflectionCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.dateKey != widget.dateKey) {
+      _load();
+    }
+  }
+
+  Future<void> _load() async {
+    final note = await widget.db.noteForDate(widget.dateKey);
+    if (mounted) {
+      setState(() {
+        _ctrl.text = note ?? '';
+        _loaded = true;
+      });
+    }
+  }
+
+  Future<void> _save() async {
+    setState(() => _saving = true);
+    await widget.db.setNote(widget.dateKey, _ctrl.text.trim());
+    if (mounted) {
+      setState(() => _saving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Reflection saved')),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final style = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    if (!_loaded) return const SizedBox.shrink();
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                'DAILY REFLECTION',
+                style: style.labelSmall?.copyWith(color: AppColors.brass),
+              ),
+              const Spacer(),
+              if (_saving)
+                const SizedBox(
+                  width: 12,
+                  height: 12,
+                  child: CircularProgressIndicator(strokeWidth: 1.5, color: AppColors.brass),
+                )
+              else
+                GestureDetector(
+                  onTap: _save,
+                  child: Text(
+                    'SAVE',
+                    style: style.labelSmall?.copyWith(
+                      color: AppColors.brass,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _ctrl,
+            maxLines: 4,
+            minLines: 2,
+            style: style.bodyMedium,
+            decoration: InputDecoration(
+              hintText: 'Record thoughts, lessons, or evening reflection…',
+              hintStyle: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 13),
+              border: InputBorder.none,
+              isDense: true,
+              contentPadding: EdgeInsets.zero,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+

@@ -9,9 +9,16 @@ const List<int> _ratings = [1, 2, 3, 4, 5];
 
 /// Capture-first. Light parchment form on a dark shell.
 class LogScreen extends StatelessWidget {
-  const LogScreen({super.key, required this.db});
+  const LogScreen({
+    super.key,
+    required this.db,
+    this.initialCategory,
+    this.initialDate,
+  });
 
   final AppDb db;
+  final String? initialCategory;
+  final DateTime? initialDate;
 
   static String _dateKey(DateTime d) {
     final m = d.month.toString().padLeft(2, '0');
@@ -32,14 +39,25 @@ class LogScreen extends StatelessWidget {
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: AppColors.brass),
         ),
       ),
-      body: _LogForm(db: db),
+      body: _LogForm(
+        db: db,
+        initialCategory: initialCategory,
+        initialDate: initialDate,
+      ),
     );
   }
 }
 
 class _LogForm extends StatefulWidget {
-  const _LogForm({required this.db});
+  const _LogForm({
+    required this.db,
+    this.initialCategory,
+    this.initialDate,
+  });
+
   final AppDb db;
+  final String? initialCategory;
+  final DateTime? initialDate;
 
   @override
   State<_LogForm> createState() => _LogFormState();
@@ -48,19 +66,55 @@ class _LogForm extends StatefulWidget {
 class _LogFormState extends State<_LogForm> {
   final _text = TextEditingController();
   final _amount = TextEditingController();
+  late final TextEditingController _unitController;
 
   String? _category;
   String _emoji = '';
   int? _rating;
   String _unit = '';
   bool _backfill = false;
-  DateTime _loggedAt = DateTime.now();
+  late DateTime _loggedAt;
 
-  String get _unitFor {
-    final cat = _category;
-    if (cat == null) return _unit;
-    final def = defaultUnitFor(cat);
-    return def.isNotEmpty ? def : _unit;
+  @override
+  void initState() {
+    super.initState();
+    _category = widget.initialCategory;
+    _loggedAt = widget.initialDate ?? DateTime.now();
+    _unit = _category != null ? defaultUnitFor(_category!) : '';
+    _unitController = TextEditingController(text: _unit);
+    if (widget.initialDate != null) {
+      final now = DateTime.now();
+      final isToday = now.year == _loggedAt.year &&
+          now.month == _loggedAt.month &&
+          now.day == _loggedAt.day;
+      if (!isToday) _backfill = true;
+    }
+  }
+
+  @override
+  void dispose() {
+    _text.dispose();
+    _amount.dispose();
+    _unitController.dispose();
+    super.dispose();
+  }
+
+  void _selectCategory(String cat) {
+    setState(() {
+      _category = cat;
+      final def = defaultUnitFor(cat);
+      if (def.isNotEmpty) {
+        _unit = def;
+        _unitController.text = def;
+      }
+    });
+  }
+
+  void _applyQuickBackfill(DateTime time) {
+    setState(() {
+      _loggedAt = time;
+      _backfill = true;
+    });
   }
 
   Future<void> _save() async {
@@ -75,7 +129,7 @@ class _LogFormState extends State<_LogForm> {
       emoji: Value(_emoji.isEmpty ? null : _emoji),
       rating: Value(_rating),
       amount: Value(double.tryParse(_amount.text)),
-      unit: Value(_unitFor),
+      unit: Value(_unitController.text.trim()),
       loggedAt: _loggedAt.millisecondsSinceEpoch,
       createdAt: DateTime.now().millisecondsSinceEpoch,
     ));
@@ -87,7 +141,11 @@ class _LogFormState extends State<_LogForm> {
   @override
   Widget build(BuildContext context) {
     final style = Theme.of(context).textTheme;
-    final lightForm = AppColors.lightSurface;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? Theme.of(context).colorScheme.surface : AppColors.lightSurface;
+    final cardText = isDark ? Theme.of(context).colorScheme.onSurface : AppColors.lightInk;
+    final cardMuted = isDark ? Theme.of(context).colorScheme.onSurfaceVariant : AppColors.lightMuted;
+    final now = DateTime.now();
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 120),
@@ -113,12 +171,71 @@ class _LogFormState extends State<_LogForm> {
           },
         ),
 
-        // Form card (light).
+        // Quick backfill date presets
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text('LOG TIME', style: style.labelSmall?.copyWith(color: AppColors.brass)),
+                const Spacer(),
+                Text(
+                  '${_loggedAt.year}-${LogScreen._dateKey(_loggedAt).substring(5)}  ${_loggedAt.hour.toString().padLeft(2, '0')}:${_loggedAt.minute.toString().padLeft(2, '0')}',
+                  style: style.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                _PresetChip(
+                  label: 'TODAY',
+                  active: !_backfill,
+                  onTap: () => setState(() {
+                    _loggedAt = DateTime.now();
+                    _backfill = false;
+                  }),
+                ),
+                _PresetChip(
+                  label: 'YESTERDAY',
+                  active: _backfill &&
+                      _loggedAt.day == now.subtract(const Duration(days: 1)).day &&
+                      _loggedAt.month == now.subtract(const Duration(days: 1)).month,
+                  onTap: () {
+                    final y = now.subtract(const Duration(days: 1));
+                    _applyQuickBackfill(DateTime(y.year, y.month, y.day, 20, 0));
+                  },
+                ),
+                _PresetChip(
+                  label: '-2 HOURS',
+                  active: false,
+                  onTap: () => _applyQuickBackfill(now.subtract(const Duration(hours: 2))),
+                ),
+                _PresetChip(
+                  label: 'MORNING 08:00',
+                  active: false,
+                  onTap: () => _applyQuickBackfill(DateTime(_loggedAt.year, _loggedAt.month, _loggedAt.day, 8, 0)),
+                ),
+                _PresetChip(
+                  label: 'CUSTOM…',
+                  active: _backfill,
+                  onTap: _pickTime,
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+
+        // Form card.
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: lightForm,
+            color: cardBg,
             borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -132,7 +249,7 @@ class _LogFormState extends State<_LogForm> {
                     _CatChip(
                       label: cat,
                       selected: _category == cat,
-                      onTap: () => setState(() => _category = cat),
+                      onTap: () => _selectCategory(cat),
                     ),
                 ],
               ),
@@ -140,12 +257,12 @@ class _LogFormState extends State<_LogForm> {
 
               TextField(
                 controller: _text,
-                style: TextStyle(color: AppColors.lightInk, fontFamily: AppType.ledger),
-                decoration: const InputDecoration(
+                style: TextStyle(color: cardText, fontFamily: AppType.ledger),
+                decoration: InputDecoration(
                   hintText: 'Mark it done…',
-                  hintStyle: TextStyle(color: AppColors.lightMuted),
-                  enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: AppColors.lightHairline)),
-                  focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: AppColors.goldDeep)),
+                  hintStyle: TextStyle(color: cardMuted),
+                  enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant)),
+                  focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppColors.goldDeep)),
                 ),
               ),
               const SizedBox(height: 16),
@@ -173,7 +290,7 @@ class _LogFormState extends State<_LogForm> {
                       onTap: () => setState(() => _rating = _rating == r ? null : r),
                       child: Icon(
                         _rating != null && r <= _rating! ? Icons.star : Icons.star_border,
-                        color: AppColors.goldDeep,
+                        color: AppColors.brass,
                         size: 28,
                       ),
                     ),
@@ -188,52 +305,32 @@ class _LogFormState extends State<_LogForm> {
                     child: TextField(
                       controller: _amount,
                       keyboardType: TextInputType.number,
-                      style: const TextStyle(color: AppColors.lightInk, fontFamily: AppType.ledger),
-                      decoration: const InputDecoration(
+                      style: TextStyle(color: cardText, fontFamily: AppType.ledger),
+                      decoration: InputDecoration(
                         hintText: 'Amount',
-                        hintStyle: TextStyle(color: AppColors.lightMuted),
-                        enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: AppColors.lightHairline)),
-                        focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: AppColors.goldDeep)),
+                        hintStyle: TextStyle(color: cardMuted),
+                        enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant)),
+                        focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppColors.goldDeep)),
                       ),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: TextField(
-                      controller: TextEditingController(text: _unitFor),
-                      style: const TextStyle(color: AppColors.lightInk, fontFamily: AppType.ledger),
-                      onChanged: (v) => setState(() => _unit = v),
-                      decoration: const InputDecoration(
+                      controller: _unitController,
+                      style: TextStyle(color: cardText, fontFamily: AppType.ledger),
+                      onChanged: (v) => _unit = v,
+                      decoration: InputDecoration(
                         hintText: 'Unit',
-                        hintStyle: TextStyle(color: AppColors.lightMuted),
-                        enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: AppColors.lightHairline)),
-                        focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: AppColors.goldDeep)),
+                        hintStyle: TextStyle(color: cardMuted),
+                        enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant)),
+                        focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppColors.goldDeep)),
                       ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-
-              // Backfill toggle.
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text('Backfill', style: style.bodyMedium?.copyWith(color: AppColors.lightBody)),
-                value: _backfill,
-                onChanged: (v) => setState(() => _backfill = v),
-                activeTrackColor: AppColors.goldDeep,
-                activeThumbColor: AppColors.lightSurface,
-              ),
-              if (_backfill)
-                TextButton.icon(
-                  onPressed: _pickTime,
-                  icon: const Icon(Icons.schedule, color: AppColors.goldDeep),
-                  label: Text(
-                    '${_loggedAt.year}-${LogScreen._dateKey(_loggedAt).substring(5)}  ${_loggedAt.hour.toString().padLeft(2, '0')}:${_loggedAt.minute.toString().padLeft(2, '0')}',
-                    style: style.bodyMedium?.copyWith(color: AppColors.lightBody),
-                  ),
-                ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
 
               SizedBox(
                 width: double.infinity,
@@ -268,6 +365,7 @@ class _LogFormState extends State<_LogForm> {
     if (time == null) return;
     setState(() {
       _loggedAt = DateTime(date.year, date.month, date.day, time.hour, time.minute);
+      _backfill = true;
     });
   }
 
@@ -434,5 +532,44 @@ class _RecentRow extends StatelessWidget {
       ),
     );
     if (ok == true) await db.deleteEntry(entry.id);
+  }
+}
+
+class _PresetChip extends StatelessWidget {
+  const _PresetChip({required this.label, required this.active, required this.onTap});
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: active
+              ? AppColors.brass
+              : (isDark ? Theme.of(context).colorScheme.surfaceContainerHighest : AppColors.lightSurface),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: active
+                ? AppColors.brass
+                : Theme.of(context).colorScheme.outlineVariant,
+          ),
+        ),
+        child: Text(
+          label,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: active
+                    ? AppColors.bg
+                    : Theme.of(context).colorScheme.onSurface,
+                fontSize: 10,
+                fontWeight: active ? FontWeight.w700 : FontWeight.w600,
+              ),
+        ),
+      ),
+    );
   }
 }

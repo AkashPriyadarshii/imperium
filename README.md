@@ -13,7 +13,7 @@
 [![Platform](https://img.shields.io/badge/Platform-Android%209.0%2B-brightgreen.svg)](https://developer.android.com)
 [![Target API](https://img.shields.io/badge/Target%20API-36%20(Android%2016)-brightgreen.svg)](https://developer.android.com)
 [![Architecture](https://img.shields.io/badge/Architecture-ARM64%20(v8a)-orange.svg)]()
-[![Tests](https://img.shields.io/badge/Tests-20%20passing-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-23%20passing-brightgreen.svg)]()
 [![Database](https://img.shields.io/badge/Database-Drift%20SQLite%20(Isolate)-blueviolet.svg)]()
 [![Privacy](https://img.shields.io/badge/Privacy-100%25%20Local%20(No%20Internet)-purple.svg)]()
 

@@ -250,22 +250,34 @@ class _AutomationScreenState extends State<AutomationScreen>
     final cs = Theme.of(context).colorScheme;
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: cs.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: cs.outlineVariant),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(child: Text(h.name, style: TextStyle(color: cs.onSurface))),
-          IconButton(
-            icon: Icon(Icons.delete_outline, color: cs.onSurfaceVariant),
-            onPressed: () async {
-              await widget.db.removeHabit(h.id);
-              _reloadHabits();
-            },
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  h.name.toUpperCase(),
+                  style: TextStyle(color: cs.onSurface, fontFamily: AppType.ledger, fontWeight: FontWeight.w600),
+                ),
+              ),
+              IconButton(
+                icon: Icon(Icons.delete_outline, color: cs.onSurfaceVariant, size: 20),
+                onPressed: () async {
+                  await widget.db.removeHabit(h.id);
+                  _reloadHabits();
+                },
+              ),
+            ],
           ),
+          const SizedBox(height: 6),
+          _HabitWeekStrip(db: widget.db, habitId: h.id),
         ],
       ),
     );
@@ -312,7 +324,70 @@ class _AutomationScreenState extends State<AutomationScreen>
   }
 }
 
-/// Honest weekly pace: how many days this week have any entry at all.
+/// 7-day consistency strip showing current week's completion for a habit.
+class _HabitWeekStrip extends StatelessWidget {
+  const _HabitWeekStrip({required this.db, required this.habitId});
+  final AppDb db;
+  final int habitId;
+
+  static const _days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+
+  Future<List<bool>> _fetchWeek() async {
+    final now = DateTime.now();
+    final monday = now.subtract(Duration(days: now.weekday - 1));
+    final results = <bool>[];
+    for (var i = 0; i < 7; i++) {
+      final d = monday.add(Duration(days: i));
+      final k = '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+      results.add(await db.isHabitChecked(habitId, k));
+    }
+    return results;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<bool>>(
+      future: _fetchWeek(),
+      builder: (context, snap) {
+        final checks = snap.data ?? List.filled(7, false);
+        return Row(
+          children: [
+            for (var i = 0; i < 7; i++) ...[
+              Column(
+                children: [
+                  Text(
+                    _days[i],
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Container(
+                    width: 14,
+                    height: 14,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: checks[i] ? AppColors.brass : Colors.transparent,
+                      border: Border.all(
+                        color: checks[i] ? AppColors.brass : Theme.of(context).colorScheme.outlineVariant,
+                        width: 1.2,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              if (i < 6) const SizedBox(width: 8),
+            ],
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// Honest weekly pace: counts completions of the specific habit.
 class _TargetStatus extends StatelessWidget {
   final AppDb db;
   final int habitId;
@@ -325,7 +400,8 @@ class _TargetStatus extends StatelessWidget {
     var days = 0;
     for (var i = 0; i < 7; i++) {
       final d = monday.add(Duration(days: i));
-      if ((await db.entriesForDate(d)).isNotEmpty) days++;
+      final k = '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+      if (await db.isHabitChecked(habitId, k)) days++;
     }
     return days;
   }
@@ -342,8 +418,8 @@ class _TargetStatus extends StatelessWidget {
         final days = snap.data ?? 0;
         final onPace = days >= target;
         final txt = onPace
-            ? 'On pace: $days / $target days logged this week.'
-            : 'Short of target: $days / $target days logged this week.';
+            ? 'On pace: $days / $target target days completed this week.'
+            : 'Short of target: $days / $target target days completed this week.';
         return Text(txt,
             style: TextStyle(
                 color: onPace ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13));
@@ -351,3 +427,4 @@ class _TargetStatus extends StatelessWidget {
     );
   }
 }
+
