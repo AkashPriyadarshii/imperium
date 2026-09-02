@@ -71,7 +71,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final logicalSelected = _selectedDate.subtract(const Duration(hours: 4));
     final style = Theme.of(context).textTheme;
 
     return Scaffold(
@@ -80,10 +79,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         stream: widget.db.watchAllEntries(),
         builder: (context, snap) {
           final entries = snap.data ?? const <Entry>[];
-          final dayEntries = entries.where((e) {
-            final logicalEntryDate = DateTime.fromMillisecondsSinceEpoch(e.loggedAt).subtract(const Duration(hours: 4));
-            return _sameDay(logicalEntryDate, logicalSelected);
-          }).toList();
+          final dayEntries = entries
+              .where((e) => AppDb.entryBelongsToDay(e, _selectedDate))
+              .toList();
           final dayCats = dayEntries.map((e) => e.category).toSet();
           final doneCount = kCategories.where(dayCats.contains).length;
           final allDone = doneCount == kCategories.length;
@@ -264,10 +262,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
               tooltip: 'Batch Import',
             ),
             const SizedBox(width: 6),
-            FutureBuilder(
-              future: StatsEngine(widget.db).overallStreak(now),
+            FutureBuilder<({int current, int best, int toTie, bool atRisk})>(
+              future: StatsEngine(widget.db).overallStreak(_selectedDate),
               builder: (context, snap) {
                 final streak = snap.data?.current ?? 1;
+                final display = streak > 0 ? streak : 1;
                 return Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
@@ -276,7 +275,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     border: Border.all(color: AppColors.brass.withValues(alpha: 0.4), width: 0.8),
                   ),
                   child: Text(
-                    'DAY $streak',
+                    'DAY $display',
                     style: style.labelSmall?.copyWith(
                       fontSize: 11,
                       fontWeight: FontWeight.bold,

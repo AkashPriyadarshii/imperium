@@ -82,16 +82,43 @@ class AppDb extends _$AppDb {
 
   Future<void> deleteEntry(int id) => (delete(entries)..where((t) => t.id.equals(id))).go();
 
+  /// Whether an entry logically belongs to a target calendar day.
+  /// For standard categories: matched by calendar day (00:00 - 23:59 local time).
+  /// For sleep: night sleep rolling window (sleep logged before 04:00 belongs to prior day).
+  static bool entryBelongsToDay(Entry e, DateTime targetDate) {
+    final entryDt = DateTime.fromMillisecondsSinceEpoch(e.loggedAt);
+    if (e.category == 'sleep') {
+      final sleepLogical = entryDt.subtract(const Duration(hours: 4));
+      return sleepLogical.year == targetDate.year &&
+          sleepLogical.month == targetDate.month &&
+          sleepLogical.day == targetDate.day;
+    }
+    return entryDt.year == targetDate.year &&
+        entryDt.month == targetDate.month &&
+        entryDt.day == targetDate.day;
+  }
+
+  /// Logical date key for an entry (YYYY-MM-DD).
+  static String entryLogicalDateKey(Entry e) {
+    final entryDt = DateTime.fromMillisecondsSinceEpoch(e.loggedAt);
+    final dt = e.category == 'sleep' ? entryDt.subtract(const Duration(hours: 4)) : entryDt;
+    final m = dt.month.toString().padLeft(2, '0');
+    final d = dt.day.toString().padLeft(2, '0');
+    return '${dt.year}-$m-$d';
+  }
+
   /// Entries for one local date; sleep rolls at 04:00, others at 00:00.
   Future<List<Entry>> entriesForDate(DateTime date, {bool sleep = false}) async {
     final day = DateTime(date.year, date.month, date.day);
-    final start = sleep ? day.subtract(const Duration(hours: 4)) : day;
-    final end = start.add(const Duration(days: 1));
+    final dayStart = day.millisecondsSinceEpoch;
+    final sleepLateEnd = day.add(const Duration(days: 1, hours: 4)).millisecondsSinceEpoch;
+
     final q = select(entries)
-      ..where((t) => t.loggedAt.isBiggerOrEqualValue(start.millisecondsSinceEpoch)
-          & t.loggedAt.isSmallerThanValue(end.millisecondsSinceEpoch))
+      ..where((t) => t.loggedAt.isBiggerOrEqualValue(dayStart)
+          & t.loggedAt.isSmallerThanValue(sleepLateEnd))
       ..orderBy([(t) => OrderingTerm.desc(t.loggedAt)]);
-    return q.get();
+    final list = await q.get();
+    return list.where((e) => entryBelongsToDay(e, date)).toList();
   }
 
   Stream<List<Entry>> entriesBetween(int from, int to) => (select(entries)
@@ -102,13 +129,14 @@ class AppDb extends _$AppDb {
   Future<int> countOnDate(DateTime date) async =>
       (await entriesForDate(date)).length;
 
-  /// Local-day stamps (days since epoch) that have >=1 logged entry.
+  /// Local-day stamps (days since local epoch) that have >=1 logged entry.
   Future<Set<int>> allLoggedDates() async {
-    final stamps = await (selectOnly(entries)..addColumns([entries.loggedAt])).get();
-    return stamps
-        .map((r) => r.read(entries.loggedAt)!)
-        .map((ms) => ms ~/ 86400000)
-        .toSet();
+    final all = await select(entries).get();
+    return all.map((e) {
+      final dt = DateTime.fromMillisecondsSinceEpoch(e.loggedAt);
+      final logical = e.category == 'sleep' ? dt.subtract(const Duration(hours: 4)) : dt;
+      return DateTime(logical.year, logical.month, logical.day).millisecondsSinceEpoch ~/ 86400000;
+    }).toSet();
   }
 
   /// All entries for a category between from/to (ms) — for stats.

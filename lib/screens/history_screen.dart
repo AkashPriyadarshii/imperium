@@ -167,8 +167,7 @@ class _HistoryBodyState extends State<_HistoryBody> {
     final groups = <String, List<Entry>>{};
     final order = <String>[];
     for (final e in entries) {
-      final day = DateTime.fromMillisecondsSinceEpoch(e.loggedAt).subtract(const Duration(hours: 4));
-      final key = '${day.year}-${day.month.toString().padLeft(2, '0')}-${day.day.toString().padLeft(2, '0')}';
+      final key = AppDb.entryLogicalDateKey(e);
       if (!groups.containsKey(key)) {
         groups[key] = [];
         order.add(key);

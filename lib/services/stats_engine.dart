@@ -37,12 +37,14 @@ class StatsEngine {
 
     final byDayA = <int, double>{};
     for (final e in a) {
-      final day = (e.loggedAt ~/ 86400000);
+      final dt = DateTime.fromMillisecondsSinceEpoch(e.loggedAt);
+      final day = DateTime(dt.year, dt.month, dt.day).millisecondsSinceEpoch ~/ 86400000;
       byDayA[day] = byDayA.containsKey(day) ? (byDayA[day]! + val(e)) / 2 : val(e);
     }
     final byDayB = <int, double>{};
     for (final e in b) {
-      final day = (e.loggedAt ~/ 86400000);
+      final dt = DateTime.fromMillisecondsSinceEpoch(e.loggedAt);
+      final day = DateTime(dt.year, dt.month, dt.day).millisecondsSinceEpoch ~/ 86400000;
       byDayB[day] = byDayB.containsKey(day) ? (byDayB[day]! + val(e)) / 2 : val(e);
     }
 
