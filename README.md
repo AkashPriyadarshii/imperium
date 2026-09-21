@@ -19,6 +19,8 @@
 
 </div>
 
+[![crates.io](https://img.shields.io/crates/v/imperium?style=flat-square)](https://crates.io/crates/imperium) [![downloads](https://img.shields.io/crates/d/imperium?style=flat-square)](https://crates.io/crates/imperium) [![release](https://img.shields.io/github/v/release/AkashPriyadarshii/imperium?style=flat-square&label=release)](https://github.com/AkashPriyadarshii/imperium/releases)
+
 ---
 
 ## What is Imperium?
