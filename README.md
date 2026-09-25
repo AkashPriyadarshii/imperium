@@ -2,6 +2,8 @@
 
 # 🏛️ Imperium — Private Offline-First Life Tracker & Discipline Ledger
 
+**Support:** fuel the next build — [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/AkashPriyadarshi)
+
 ### Your life. Your ledger. For you alone.
 
 **100% Local. Zero Cloud. Zero Telemetry. Zero Compromise.**
@@ -217,8 +219,3 @@ flutter build apk --release --target-platform android-arm64
 *Your life. Your ledger. For you alone.*
 
 </div>
-
-
----
-
-**Support:** fuel the next build — [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/AkashPriyadarshi)
