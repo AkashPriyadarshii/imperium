@@ -208,7 +208,7 @@ flutter build apk --release --target-platform android-arm64
 - **Portfolio**: [akashpriyadarshi.vercel.app](https://akashpriyadarshii.vercel.app)
 - **Resume**: [akashpriyadarshii.github.io/Resume](https://akashpriyadarshii.github.io/Resume/)
 - **X / Twitter**: [@Akash__ydv001](https://twitter.com/Akash__ydv001)
-- **LinkedIn**: [akash-priyadarshi](https://linkedin.com/in/akash-priyadarshi-1aa51b37a)
+- **LinkedIn**: [akash-priyadarshi](https://linkedin.com/in/akashpriyadarshii)
 
 ---
 
@@ -217,3 +217,8 @@ flutter build apk --release --target-platform android-arm64
 *Your life. Your ledger. For you alone.*
 
 </div>
+
+
+---
+
+**Support:** fuel the next build — [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/AkashPriyadarshi)
